@@ -61,6 +61,28 @@ class AdminUserOrderByInput {
   @Field(() => SortOrder, {
     nullable: true,
   })
+  passwordService?: SortOrder;
+
+  @ApiProperty({
+    required: false,
+    enum: ["asc", "desc"],
+  })
+  @IsOptional()
+  @IsEnum(SortOrder)
+  @Field(() => SortOrder, {
+    nullable: true,
+  })
+  rolesBuilder?: SortOrder;
+
+  @ApiProperty({
+    required: false,
+    enum: ["asc", "desc"],
+  })
+  @IsOptional()
+  @IsEnum(SortOrder)
+  @Field(() => SortOrder, {
+    nullable: true,
+  })
   updatedAt?: SortOrder;
 
   @ApiProperty({

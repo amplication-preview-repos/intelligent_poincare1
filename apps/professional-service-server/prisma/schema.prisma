@@ -26,11 +26,13 @@ model SmsRequest {
 }
 
 model AdminUser {
-  createdAt DateTime @default(now())
-  id        String   @id @default(cuid())
-  password  String?
-  updatedAt DateTime @updatedAt
-  username  String?
+  createdAt       DateTime @default(now())
+  id              String   @id @default(cuid())
+  password        String?
+  passwordService String?
+  rolesBuilder    String?
+  updatedAt       DateTime @updatedAt
+  username        String?
 }
 
 model Appointment {

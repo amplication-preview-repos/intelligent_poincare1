@@ -6,6 +6,8 @@ export const AdminUserCreate = (props: CreateProps): React.ReactElement => {
     <Create {...props}>
       <SimpleForm>
         <TextInput label="password" source="password" />
+        <TextInput label="passwordService" source="passwordService" />
+        <TextInput label="rolesBuilder" source="rolesBuilder" />
         <TextInput label="username" source="username" />
       </SimpleForm>
     </Create>

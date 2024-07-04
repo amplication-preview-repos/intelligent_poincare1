@@ -14,6 +14,8 @@ export const AdminUserShow = (props: ShowProps): React.ReactElement => {
         <DateField source="createdAt" label="Created At" />
         <TextField label="ID" source="id" />
         <TextField label="password" source="password" />
+        <TextField label="passwordService" source="passwordService" />
+        <TextField label="rolesBuilder" source="rolesBuilder" />
         <DateField source="updatedAt" label="Updated At" />
         <TextField label="username" source="username" />
       </SimpleShowLayout>

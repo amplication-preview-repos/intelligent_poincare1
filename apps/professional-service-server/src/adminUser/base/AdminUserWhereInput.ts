@@ -49,6 +49,28 @@ class AdminUserWhereInput {
   @Field(() => StringNullableFilter, {
     nullable: true,
   })
+  passwordService?: StringNullableFilter;
+
+  @ApiProperty({
+    required: false,
+    type: StringNullableFilter,
+  })
+  @Type(() => StringNullableFilter)
+  @IsOptional()
+  @Field(() => StringNullableFilter, {
+    nullable: true,
+  })
+  rolesBuilder?: StringNullableFilter;
+
+  @ApiProperty({
+    required: false,
+    type: StringNullableFilter,
+  })
+  @Type(() => StringNullableFilter)
+  @IsOptional()
+  @Field(() => StringNullableFilter, {
+    nullable: true,
+  })
   username?: StringNullableFilter;
 }
 

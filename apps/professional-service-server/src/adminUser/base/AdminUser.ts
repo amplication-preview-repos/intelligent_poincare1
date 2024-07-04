@@ -45,6 +45,30 @@ class AdminUser {
   password!: string | null;
 
   @ApiProperty({
+    required: false,
+    type: String,
+  })
+  @IsString()
+  @MaxLength(1000)
+  @IsOptional()
+  @Field(() => String, {
+    nullable: true,
+  })
+  passwordService!: string | null;
+
+  @ApiProperty({
+    required: false,
+    type: String,
+  })
+  @IsString()
+  @MaxLength(1000)
+  @IsOptional()
+  @Field(() => String, {
+    nullable: true,
+  })
+  rolesBuilder!: string | null;
+
+  @ApiProperty({
     required: true,
   })
   @IsDate()

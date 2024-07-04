@@ -6,6 +6,8 @@ export const AdminUserEdit = (props: EditProps): React.ReactElement => {
     <Edit {...props}>
       <SimpleForm>
         <TextInput label="password" source="password" />
+        <TextInput label="passwordService" source="passwordService" />
+        <TextInput label="rolesBuilder" source="rolesBuilder" />
         <TextInput label="username" source="username" />
       </SimpleForm>
     </Edit>
