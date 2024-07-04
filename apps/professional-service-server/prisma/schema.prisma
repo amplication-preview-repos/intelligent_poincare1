@@ -1,0 +1,214 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DB_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model AuthToken {
+  createdAt DateTime @default(now())
+  fkUser    String?
+  id        String   @id @default(cuid())
+  token     String?
+  updatedAt DateTime @updatedAt
+}
+
+model SmsRequest {
+  createdAt   DateTime  @default(now())
+  dateCreated DateTime?
+  dateSent    DateTime?
+  id          String    @id @default(cuid())
+  phone       String?
+  sent        Boolean?
+  updatedAt   DateTime  @updatedAt
+}
+
+model AdminUser {
+  createdAt       DateTime @default(now())
+  id              String   @id @default(cuid())
+  password        String?
+  passwordService String?
+  rolesBuilder    String?
+  updatedAt       DateTime @updatedAt
+  username        String?
+}
+
+model Appointment {
+  createdAt        DateTime  @default(now())
+  dateRequested    DateTime?
+  dateService      DateTime?
+  fkAddress        String?
+  fkProfessional   String?
+  fkServicePackage String?
+  fkStatus         String?
+  fkTimeSlot       String?
+  fkUser           String?
+  id               String    @id @default(cuid())
+  reviewed         Boolean?
+  updatedAt        DateTime  @updatedAt
+}
+
+model RegistrationToken {
+  createdAt   DateTime  @default(now())
+  dateCreated DateTime?
+  dateExpires DateTime?
+  id          String    @id @default(cuid())
+  phone       String?
+  token       String?
+  updatedAt   DateTime  @updatedAt
+  used        Boolean?
+}
+
+model Address {
+  city         String?
+  complement   String?
+  createdAt    DateTime @default(now())
+  fkUserId     String?
+  id           String   @id @default(cuid())
+  mainAddress  Boolean?
+  neighborhood String?
+  numberField  String?
+  state        String?
+  street       String?
+  updatedAt    DateTime @updatedAt
+  zipCode      String?
+}
+
+model User {
+  cpf            String?
+  createdAt      DateTime @default(now())
+  email          String?  @unique
+  firstName      String?
+  id             String   @id @default(cuid())
+  isActive       Boolean?
+  isProfessional Boolean?
+  lastName       String?
+  name           String?
+  password       String
+  phone          String?
+  roles          Json
+  updatedAt      DateTime @updatedAt
+  urlAvatar      String?
+  username       String   @unique
+}
+
+model PaymentStatus {
+  createdAt   DateTime @default(now())
+  description String?
+  id          String   @id @default(cuid())
+  name        String?
+  updatedAt   DateTime @updatedAt
+}
+
+model Review {
+  createdAt     DateTime @default(now())
+  description   String?
+  fkAppointment String?
+  id            String   @id @default(cuid())
+  score         Int?
+  updatedAt     DateTime @updatedAt
+}
+
+model Payment {
+  createdAt     DateTime  @default(now())
+  date          DateTime?
+  externalId    String?
+  fee           Float?
+  fkAppointment String?
+  id            String    @id @default(cuid())
+  updatedAt     DateTime  @updatedAt
+  value         Float?
+}
+
+model ServiceType {
+  createdAt   DateTime @default(now())
+  description String?
+  id          String   @id @default(cuid())
+  name        String?
+  updatedAt   DateTime @updatedAt
+}
+
+model PaymentHistory {
+  createdAt       DateTime  @default(now())
+  fkPayment       String?
+  fkPaymentStatus String?
+  id              String    @id @default(cuid())
+  timestamp       DateTime?
+  updatedAt       DateTime  @updatedAt
+}
+
+model ProfessionalAvailability {
+  createdAt      DateTime @default(now())
+  fkDayOfWeek    String?
+  fkProfessional String?
+  fkTimeSlot     String?
+  id             String   @id @default(cuid())
+  updatedAt      DateTime @updatedAt
+}
+
+model ServicePackage {
+  createdAt     DateTime @default(now())
+  description   String?
+  feeFixed      Float?
+  feePercentage Float?
+  fkServiceType String?
+  hidden        Boolean?
+  id            String   @id @default(cuid())
+  name          String?
+  price         Float?
+  updatedAt     DateTime @updatedAt
+}
+
+model ProfessionalAvailabiltyExceptions {
+  createdAt      DateTime  @default(now())
+  date           DateTime?
+  fkProfessional String?
+  fkTimeSlot     String?
+  id             String    @id @default(cuid())
+  updatedAt      DateTime  @updatedAt
+}
+
+model ServiceTimeSlot {
+  createdAt      DateTime  @default(now())
+  description    String?
+  id             String    @id @default(cuid())
+  timestampEnd   DateTime?
+  timestampStart DateTime?
+  updatedAt      DateTime  @updatedAt
+}
+
+model ServiceQuote {
+  createdAt        DateTime @default(now())
+  fkServicePackage String?
+  fkStatus         String?
+  fkUser           String?
+  id               String   @id @default(cuid())
+  price            Float?
+  updatedAt        DateTime @updatedAt
+}
+
+model ProfessionalPayments {
+  createdAt      DateTime  @default(now())
+  fkAppointment  String?
+  fkProfessional String?
+  id             String    @id @default(cuid())
+  timestamp      DateTime?
+  updatedAt      DateTime  @updatedAt
+}
+
+model DayOfWeek {
+  createdAt DateTime @default(now())
+  id        String   @id @default(cuid())
+  name      String?
+  updatedAt DateTime @updatedAt
+}
+
+model AppointmentStatus {
+  createdAt   DateTime @default(now())
+  description String?
+  id          String   @id @default(cuid())
+  name        String?
+  updatedAt   DateTime @updatedAt
+}
