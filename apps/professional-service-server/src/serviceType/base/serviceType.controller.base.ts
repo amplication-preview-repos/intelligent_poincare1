@@ -16,17 +16,35 @@ import * as errors from "../../errors";
 import { Request } from "express";
 import { plainToClass } from "class-transformer";
 import { ApiNestedQuery } from "../../decorators/api-nested-query.decorator";
+import * as nestAccessControl from "nest-access-control";
+import * as defaultAuthGuard from "../../auth/defaultAuth.guard";
 import { ServiceTypeService } from "../serviceType.service";
+import { AclValidateRequestInterceptor } from "../../interceptors/aclValidateRequest.interceptor";
+import { AclFilterResponseInterceptor } from "../../interceptors/aclFilterResponse.interceptor";
 import { ServiceTypeCreateInput } from "./ServiceTypeCreateInput";
 import { ServiceType } from "./ServiceType";
 import { ServiceTypeFindManyArgs } from "./ServiceTypeFindManyArgs";
 import { ServiceTypeWhereUniqueInput } from "./ServiceTypeWhereUniqueInput";
 import { ServiceTypeUpdateInput } from "./ServiceTypeUpdateInput";
 
+@swagger.ApiBearerAuth()
+@common.UseGuards(defaultAuthGuard.DefaultAuthGuard, nestAccessControl.ACGuard)
 export class ServiceTypeControllerBase {
-  constructor(protected readonly service: ServiceTypeService) {}
+  constructor(
+    protected readonly service: ServiceTypeService,
+    protected readonly rolesBuilder: nestAccessControl.RolesBuilder
+  ) {}
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @common.Post()
   @swagger.ApiCreatedResponse({ type: ServiceType })
+  @nestAccessControl.UseRoles({
+    resource: "ServiceType",
+    action: "create",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async createServiceType(
     @common.Body() data: ServiceTypeCreateInput
   ): Promise<ServiceType> {
@@ -42,9 +60,18 @@ export class ServiceTypeControllerBase {
     });
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @common.Get()
   @swagger.ApiOkResponse({ type: [ServiceType] })
   @ApiNestedQuery(ServiceTypeFindManyArgs)
+  @nestAccessControl.UseRoles({
+    resource: "ServiceType",
+    action: "read",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async serviceTypes(@common.Req() request: Request): Promise<ServiceType[]> {
     const args = plainToClass(ServiceTypeFindManyArgs, request.query);
     return this.service.serviceTypes({
@@ -59,9 +86,18 @@ export class ServiceTypeControllerBase {
     });
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @common.Get("/:id")
   @swagger.ApiOkResponse({ type: ServiceType })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "ServiceType",
+    action: "read",
+    possession: "own",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async serviceType(
     @common.Param() params: ServiceTypeWhereUniqueInput
   ): Promise<ServiceType | null> {
@@ -83,9 +119,18 @@ export class ServiceTypeControllerBase {
     return result;
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @common.Patch("/:id")
   @swagger.ApiOkResponse({ type: ServiceType })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "ServiceType",
+    action: "update",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async updateServiceType(
     @common.Param() params: ServiceTypeWhereUniqueInput,
     @common.Body() data: ServiceTypeUpdateInput
@@ -115,6 +160,14 @@ export class ServiceTypeControllerBase {
   @common.Delete("/:id")
   @swagger.ApiOkResponse({ type: ServiceType })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "ServiceType",
+    action: "delete",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async deleteServiceType(
     @common.Param() params: ServiceTypeWhereUniqueInput
   ): Promise<ServiceType | null> {

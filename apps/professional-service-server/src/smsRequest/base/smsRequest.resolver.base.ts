@@ -13,6 +13,12 @@ import * as graphql from "@nestjs/graphql";
 import { GraphQLError } from "graphql";
 import { isRecordNotFoundError } from "../../prisma.util";
 import { MetaQueryPayload } from "../../util/MetaQueryPayload";
+import * as nestAccessControl from "nest-access-control";
+import * as gqlACGuard from "../../auth/gqlAC.guard";
+import { GqlDefaultAuthGuard } from "../../auth/gqlDefaultAuth.guard";
+import * as common from "@nestjs/common";
+import { AclFilterResponseInterceptor } from "../../interceptors/aclFilterResponse.interceptor";
+import { AclValidateRequestInterceptor } from "../../interceptors/aclValidateRequest.interceptor";
 import { SmsRequest } from "./SmsRequest";
 import { SmsRequestCountArgs } from "./SmsRequestCountArgs";
 import { SmsRequestFindManyArgs } from "./SmsRequestFindManyArgs";
@@ -21,10 +27,20 @@ import { CreateSmsRequestArgs } from "./CreateSmsRequestArgs";
 import { UpdateSmsRequestArgs } from "./UpdateSmsRequestArgs";
 import { DeleteSmsRequestArgs } from "./DeleteSmsRequestArgs";
 import { SmsRequestService } from "../smsRequest.service";
+@common.UseGuards(GqlDefaultAuthGuard, gqlACGuard.GqlACGuard)
 @graphql.Resolver(() => SmsRequest)
 export class SmsRequestResolverBase {
-  constructor(protected readonly service: SmsRequestService) {}
+  constructor(
+    protected readonly service: SmsRequestService,
+    protected readonly rolesBuilder: nestAccessControl.RolesBuilder
+  ) {}
 
+  @graphql.Query(() => MetaQueryPayload)
+  @nestAccessControl.UseRoles({
+    resource: "SmsRequest",
+    action: "read",
+    possession: "any",
+  })
   async _smsRequestsMeta(
     @graphql.Args() args: SmsRequestCountArgs
   ): Promise<MetaQueryPayload> {
@@ -34,14 +50,26 @@ export class SmsRequestResolverBase {
     };
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @graphql.Query(() => [SmsRequest])
+  @nestAccessControl.UseRoles({
+    resource: "SmsRequest",
+    action: "read",
+    possession: "any",
+  })
   async smsRequests(
     @graphql.Args() args: SmsRequestFindManyArgs
   ): Promise<SmsRequest[]> {
     return this.service.smsRequests(args);
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @graphql.Query(() => SmsRequest, { nullable: true })
+  @nestAccessControl.UseRoles({
+    resource: "SmsRequest",
+    action: "read",
+    possession: "own",
+  })
   async smsRequest(
     @graphql.Args() args: SmsRequestFindUniqueArgs
   ): Promise<SmsRequest | null> {
@@ -52,7 +80,13 @@ export class SmsRequestResolverBase {
     return result;
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @graphql.Mutation(() => SmsRequest)
+  @nestAccessControl.UseRoles({
+    resource: "SmsRequest",
+    action: "create",
+    possession: "any",
+  })
   async createSmsRequest(
     @graphql.Args() args: CreateSmsRequestArgs
   ): Promise<SmsRequest> {
@@ -62,7 +96,13 @@ export class SmsRequestResolverBase {
     });
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @graphql.Mutation(() => SmsRequest)
+  @nestAccessControl.UseRoles({
+    resource: "SmsRequest",
+    action: "update",
+    possession: "any",
+  })
   async updateSmsRequest(
     @graphql.Args() args: UpdateSmsRequestArgs
   ): Promise<SmsRequest | null> {
@@ -82,6 +122,11 @@ export class SmsRequestResolverBase {
   }
 
   @graphql.Mutation(() => SmsRequest)
+  @nestAccessControl.UseRoles({
+    resource: "SmsRequest",
+    action: "delete",
+    possession: "any",
+  })
   async deleteSmsRequest(
     @graphql.Args() args: DeleteSmsRequestArgs
   ): Promise<SmsRequest | null> {

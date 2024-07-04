@@ -16,17 +16,35 @@ import * as errors from "../../errors";
 import { Request } from "express";
 import { plainToClass } from "class-transformer";
 import { ApiNestedQuery } from "../../decorators/api-nested-query.decorator";
+import * as nestAccessControl from "nest-access-control";
+import * as defaultAuthGuard from "../../auth/defaultAuth.guard";
 import { ServicePackageService } from "../servicePackage.service";
+import { AclValidateRequestInterceptor } from "../../interceptors/aclValidateRequest.interceptor";
+import { AclFilterResponseInterceptor } from "../../interceptors/aclFilterResponse.interceptor";
 import { ServicePackageCreateInput } from "./ServicePackageCreateInput";
 import { ServicePackage } from "./ServicePackage";
 import { ServicePackageFindManyArgs } from "./ServicePackageFindManyArgs";
 import { ServicePackageWhereUniqueInput } from "./ServicePackageWhereUniqueInput";
 import { ServicePackageUpdateInput } from "./ServicePackageUpdateInput";
 
+@swagger.ApiBearerAuth()
+@common.UseGuards(defaultAuthGuard.DefaultAuthGuard, nestAccessControl.ACGuard)
 export class ServicePackageControllerBase {
-  constructor(protected readonly service: ServicePackageService) {}
+  constructor(
+    protected readonly service: ServicePackageService,
+    protected readonly rolesBuilder: nestAccessControl.RolesBuilder
+  ) {}
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @common.Post()
   @swagger.ApiCreatedResponse({ type: ServicePackage })
+  @nestAccessControl.UseRoles({
+    resource: "ServicePackage",
+    action: "create",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async createServicePackage(
     @common.Body() data: ServicePackageCreateInput
   ): Promise<ServicePackage> {
@@ -47,9 +65,18 @@ export class ServicePackageControllerBase {
     });
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @common.Get()
   @swagger.ApiOkResponse({ type: [ServicePackage] })
   @ApiNestedQuery(ServicePackageFindManyArgs)
+  @nestAccessControl.UseRoles({
+    resource: "ServicePackage",
+    action: "read",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async servicePackages(
     @common.Req() request: Request
   ): Promise<ServicePackage[]> {
@@ -71,9 +98,18 @@ export class ServicePackageControllerBase {
     });
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @common.Get("/:id")
   @swagger.ApiOkResponse({ type: ServicePackage })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "ServicePackage",
+    action: "read",
+    possession: "own",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async servicePackage(
     @common.Param() params: ServicePackageWhereUniqueInput
   ): Promise<ServicePackage | null> {
@@ -100,9 +136,18 @@ export class ServicePackageControllerBase {
     return result;
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @common.Patch("/:id")
   @swagger.ApiOkResponse({ type: ServicePackage })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "ServicePackage",
+    action: "update",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async updateServicePackage(
     @common.Param() params: ServicePackageWhereUniqueInput,
     @common.Body() data: ServicePackageUpdateInput
@@ -137,6 +182,14 @@ export class ServicePackageControllerBase {
   @common.Delete("/:id")
   @swagger.ApiOkResponse({ type: ServicePackage })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "ServicePackage",
+    action: "delete",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async deleteServicePackage(
     @common.Param() params: ServicePackageWhereUniqueInput
   ): Promise<ServicePackage | null> {

@@ -13,6 +13,12 @@ import * as graphql from "@nestjs/graphql";
 import { GraphQLError } from "graphql";
 import { isRecordNotFoundError } from "../../prisma.util";
 import { MetaQueryPayload } from "../../util/MetaQueryPayload";
+import * as nestAccessControl from "nest-access-control";
+import * as gqlACGuard from "../../auth/gqlAC.guard";
+import { GqlDefaultAuthGuard } from "../../auth/gqlDefaultAuth.guard";
+import * as common from "@nestjs/common";
+import { AclFilterResponseInterceptor } from "../../interceptors/aclFilterResponse.interceptor";
+import { AclValidateRequestInterceptor } from "../../interceptors/aclValidateRequest.interceptor";
 import { AdminUser } from "./AdminUser";
 import { AdminUserCountArgs } from "./AdminUserCountArgs";
 import { AdminUserFindManyArgs } from "./AdminUserFindManyArgs";
@@ -20,11 +26,23 @@ import { AdminUserFindUniqueArgs } from "./AdminUserFindUniqueArgs";
 import { CreateAdminUserArgs } from "./CreateAdminUserArgs";
 import { UpdateAdminUserArgs } from "./UpdateAdminUserArgs";
 import { DeleteAdminUserArgs } from "./DeleteAdminUserArgs";
+import { LoginInput } from "../LoginInput";
+import { LoginResponse } from "../LoginResponse";
 import { AdminUserService } from "../adminUser.service";
+@common.UseGuards(GqlDefaultAuthGuard, gqlACGuard.GqlACGuard)
 @graphql.Resolver(() => AdminUser)
 export class AdminUserResolverBase {
-  constructor(protected readonly service: AdminUserService) {}
+  constructor(
+    protected readonly service: AdminUserService,
+    protected readonly rolesBuilder: nestAccessControl.RolesBuilder
+  ) {}
 
+  @graphql.Query(() => MetaQueryPayload)
+  @nestAccessControl.UseRoles({
+    resource: "AdminUser",
+    action: "read",
+    possession: "any",
+  })
   async _adminUsersMeta(
     @graphql.Args() args: AdminUserCountArgs
   ): Promise<MetaQueryPayload> {
@@ -34,14 +52,26 @@ export class AdminUserResolverBase {
     };
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @graphql.Query(() => [AdminUser])
+  @nestAccessControl.UseRoles({
+    resource: "AdminUser",
+    action: "read",
+    possession: "any",
+  })
   async adminUsers(
     @graphql.Args() args: AdminUserFindManyArgs
   ): Promise<AdminUser[]> {
     return this.service.adminUsers(args);
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @graphql.Query(() => AdminUser, { nullable: true })
+  @nestAccessControl.UseRoles({
+    resource: "AdminUser",
+    action: "read",
+    possession: "own",
+  })
   async adminUser(
     @graphql.Args() args: AdminUserFindUniqueArgs
   ): Promise<AdminUser | null> {
@@ -52,7 +82,13 @@ export class AdminUserResolverBase {
     return result;
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @graphql.Mutation(() => AdminUser)
+  @nestAccessControl.UseRoles({
+    resource: "AdminUser",
+    action: "create",
+    possession: "any",
+  })
   async createAdminUser(
     @graphql.Args() args: CreateAdminUserArgs
   ): Promise<AdminUser> {
@@ -62,7 +98,13 @@ export class AdminUserResolverBase {
     });
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @graphql.Mutation(() => AdminUser)
+  @nestAccessControl.UseRoles({
+    resource: "AdminUser",
+    action: "update",
+    possession: "any",
+  })
   async updateAdminUser(
     @graphql.Args() args: UpdateAdminUserArgs
   ): Promise<AdminUser | null> {
@@ -82,6 +124,11 @@ export class AdminUserResolverBase {
   }
 
   @graphql.Mutation(() => AdminUser)
+  @nestAccessControl.UseRoles({
+    resource: "AdminUser",
+    action: "delete",
+    possession: "any",
+  })
   async deleteAdminUser(
     @graphql.Args() args: DeleteAdminUserArgs
   ): Promise<AdminUser | null> {
@@ -95,5 +142,13 @@ export class AdminUserResolverBase {
       }
       throw error;
     }
+  }
+
+  @graphql.Mutation(() => LoginResponse)
+  async LoginAdminUser(
+    @graphql.Args()
+    args: LoginInput
+  ): Promise<LoginResponse> {
+    return this.service.LoginAdminUser(args);
   }
 }

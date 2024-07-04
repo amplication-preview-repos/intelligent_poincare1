@@ -11,6 +11,8 @@ https://docs.amplication.com/how-to/custom-code
   */
 import { PrismaService } from "../../prisma/prisma.service";
 import { Prisma, AdminUser as PrismaAdminUser } from "@prisma/client";
+import { LoginInput } from "../LoginInput";
+import { LoginResponse } from "../LoginResponse";
 
 export class AdminUserServiceBase {
   constructor(protected readonly prisma: PrismaService) {}
@@ -45,5 +47,8 @@ export class AdminUserServiceBase {
     args: Prisma.AdminUserDeleteArgs
   ): Promise<PrismaAdminUser> {
     return this.prisma.adminUser.delete(args);
+  }
+  async LoginAdminUser(args: LoginInput): Promise<LoginResponse> {
+    throw new Error("Not implemented");
   }
 }

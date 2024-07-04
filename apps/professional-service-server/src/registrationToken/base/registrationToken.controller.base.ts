@@ -16,17 +16,35 @@ import * as errors from "../../errors";
 import { Request } from "express";
 import { plainToClass } from "class-transformer";
 import { ApiNestedQuery } from "../../decorators/api-nested-query.decorator";
+import * as nestAccessControl from "nest-access-control";
+import * as defaultAuthGuard from "../../auth/defaultAuth.guard";
 import { RegistrationTokenService } from "../registrationToken.service";
+import { AclValidateRequestInterceptor } from "../../interceptors/aclValidateRequest.interceptor";
+import { AclFilterResponseInterceptor } from "../../interceptors/aclFilterResponse.interceptor";
 import { RegistrationTokenCreateInput } from "./RegistrationTokenCreateInput";
 import { RegistrationToken } from "./RegistrationToken";
 import { RegistrationTokenFindManyArgs } from "./RegistrationTokenFindManyArgs";
 import { RegistrationTokenWhereUniqueInput } from "./RegistrationTokenWhereUniqueInput";
 import { RegistrationTokenUpdateInput } from "./RegistrationTokenUpdateInput";
 
+@swagger.ApiBearerAuth()
+@common.UseGuards(defaultAuthGuard.DefaultAuthGuard, nestAccessControl.ACGuard)
 export class RegistrationTokenControllerBase {
-  constructor(protected readonly service: RegistrationTokenService) {}
+  constructor(
+    protected readonly service: RegistrationTokenService,
+    protected readonly rolesBuilder: nestAccessControl.RolesBuilder
+  ) {}
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @common.Post()
   @swagger.ApiCreatedResponse({ type: RegistrationToken })
+  @nestAccessControl.UseRoles({
+    resource: "RegistrationToken",
+    action: "create",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async createRegistrationToken(
     @common.Body() data: RegistrationTokenCreateInput
   ): Promise<RegistrationToken> {
@@ -45,9 +63,18 @@ export class RegistrationTokenControllerBase {
     });
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @common.Get()
   @swagger.ApiOkResponse({ type: [RegistrationToken] })
   @ApiNestedQuery(RegistrationTokenFindManyArgs)
+  @nestAccessControl.UseRoles({
+    resource: "RegistrationToken",
+    action: "read",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async registrationTokens(
     @common.Req() request: Request
   ): Promise<RegistrationToken[]> {
@@ -67,9 +94,18 @@ export class RegistrationTokenControllerBase {
     });
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @common.Get("/:id")
   @swagger.ApiOkResponse({ type: RegistrationToken })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "RegistrationToken",
+    action: "read",
+    possession: "own",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async registrationToken(
     @common.Param() params: RegistrationTokenWhereUniqueInput
   ): Promise<RegistrationToken | null> {
@@ -94,9 +130,18 @@ export class RegistrationTokenControllerBase {
     return result;
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @common.Patch("/:id")
   @swagger.ApiOkResponse({ type: RegistrationToken })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "RegistrationToken",
+    action: "update",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async updateRegistrationToken(
     @common.Param() params: RegistrationTokenWhereUniqueInput,
     @common.Body() data: RegistrationTokenUpdateInput
@@ -129,6 +174,14 @@ export class RegistrationTokenControllerBase {
   @common.Delete("/:id")
   @swagger.ApiOkResponse({ type: RegistrationToken })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "RegistrationToken",
+    action: "delete",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async deleteRegistrationToken(
     @common.Param() params: RegistrationTokenWhereUniqueInput
   ): Promise<RegistrationToken | null> {

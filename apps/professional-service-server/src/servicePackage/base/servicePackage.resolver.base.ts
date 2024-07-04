@@ -13,6 +13,12 @@ import * as graphql from "@nestjs/graphql";
 import { GraphQLError } from "graphql";
 import { isRecordNotFoundError } from "../../prisma.util";
 import { MetaQueryPayload } from "../../util/MetaQueryPayload";
+import * as nestAccessControl from "nest-access-control";
+import * as gqlACGuard from "../../auth/gqlAC.guard";
+import { GqlDefaultAuthGuard } from "../../auth/gqlDefaultAuth.guard";
+import * as common from "@nestjs/common";
+import { AclFilterResponseInterceptor } from "../../interceptors/aclFilterResponse.interceptor";
+import { AclValidateRequestInterceptor } from "../../interceptors/aclValidateRequest.interceptor";
 import { ServicePackage } from "./ServicePackage";
 import { ServicePackageCountArgs } from "./ServicePackageCountArgs";
 import { ServicePackageFindManyArgs } from "./ServicePackageFindManyArgs";
@@ -21,10 +27,20 @@ import { CreateServicePackageArgs } from "./CreateServicePackageArgs";
 import { UpdateServicePackageArgs } from "./UpdateServicePackageArgs";
 import { DeleteServicePackageArgs } from "./DeleteServicePackageArgs";
 import { ServicePackageService } from "../servicePackage.service";
+@common.UseGuards(GqlDefaultAuthGuard, gqlACGuard.GqlACGuard)
 @graphql.Resolver(() => ServicePackage)
 export class ServicePackageResolverBase {
-  constructor(protected readonly service: ServicePackageService) {}
+  constructor(
+    protected readonly service: ServicePackageService,
+    protected readonly rolesBuilder: nestAccessControl.RolesBuilder
+  ) {}
 
+  @graphql.Query(() => MetaQueryPayload)
+  @nestAccessControl.UseRoles({
+    resource: "ServicePackage",
+    action: "read",
+    possession: "any",
+  })
   async _servicePackagesMeta(
     @graphql.Args() args: ServicePackageCountArgs
   ): Promise<MetaQueryPayload> {
@@ -34,14 +50,26 @@ export class ServicePackageResolverBase {
     };
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @graphql.Query(() => [ServicePackage])
+  @nestAccessControl.UseRoles({
+    resource: "ServicePackage",
+    action: "read",
+    possession: "any",
+  })
   async servicePackages(
     @graphql.Args() args: ServicePackageFindManyArgs
   ): Promise<ServicePackage[]> {
     return this.service.servicePackages(args);
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @graphql.Query(() => ServicePackage, { nullable: true })
+  @nestAccessControl.UseRoles({
+    resource: "ServicePackage",
+    action: "read",
+    possession: "own",
+  })
   async servicePackage(
     @graphql.Args() args: ServicePackageFindUniqueArgs
   ): Promise<ServicePackage | null> {
@@ -52,7 +80,13 @@ export class ServicePackageResolverBase {
     return result;
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @graphql.Mutation(() => ServicePackage)
+  @nestAccessControl.UseRoles({
+    resource: "ServicePackage",
+    action: "create",
+    possession: "any",
+  })
   async createServicePackage(
     @graphql.Args() args: CreateServicePackageArgs
   ): Promise<ServicePackage> {
@@ -62,7 +96,13 @@ export class ServicePackageResolverBase {
     });
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @graphql.Mutation(() => ServicePackage)
+  @nestAccessControl.UseRoles({
+    resource: "ServicePackage",
+    action: "update",
+    possession: "any",
+  })
   async updateServicePackage(
     @graphql.Args() args: UpdateServicePackageArgs
   ): Promise<ServicePackage | null> {
@@ -82,6 +122,11 @@ export class ServicePackageResolverBase {
   }
 
   @graphql.Mutation(() => ServicePackage)
+  @nestAccessControl.UseRoles({
+    resource: "ServicePackage",
+    action: "delete",
+    possession: "any",
+  })
   async deleteServicePackage(
     @graphql.Args() args: DeleteServicePackageArgs
   ): Promise<ServicePackage | null> {

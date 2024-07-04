@@ -13,6 +13,12 @@ import * as graphql from "@nestjs/graphql";
 import { GraphQLError } from "graphql";
 import { isRecordNotFoundError } from "../../prisma.util";
 import { MetaQueryPayload } from "../../util/MetaQueryPayload";
+import * as nestAccessControl from "nest-access-control";
+import * as gqlACGuard from "../../auth/gqlAC.guard";
+import { GqlDefaultAuthGuard } from "../../auth/gqlDefaultAuth.guard";
+import * as common from "@nestjs/common";
+import { AclFilterResponseInterceptor } from "../../interceptors/aclFilterResponse.interceptor";
+import { AclValidateRequestInterceptor } from "../../interceptors/aclValidateRequest.interceptor";
 import { ProfessionalAvailabiltyExceptions } from "./ProfessionalAvailabiltyExceptions";
 import { ProfessionalAvailabiltyExceptionsCountArgs } from "./ProfessionalAvailabiltyExceptionsCountArgs";
 import { ProfessionalAvailabiltyExceptionsFindManyArgs } from "./ProfessionalAvailabiltyExceptionsFindManyArgs";
@@ -21,12 +27,20 @@ import { CreateProfessionalAvailabiltyExceptionsArgs } from "./CreateProfessiona
 import { UpdateProfessionalAvailabiltyExceptionsArgs } from "./UpdateProfessionalAvailabiltyExceptionsArgs";
 import { DeleteProfessionalAvailabiltyExceptionsArgs } from "./DeleteProfessionalAvailabiltyExceptionsArgs";
 import { ProfessionalAvailabiltyExceptionsService } from "../professionalAvailabiltyExceptions.service";
+@common.UseGuards(GqlDefaultAuthGuard, gqlACGuard.GqlACGuard)
 @graphql.Resolver(() => ProfessionalAvailabiltyExceptions)
 export class ProfessionalAvailabiltyExceptionsResolverBase {
   constructor(
-    protected readonly service: ProfessionalAvailabiltyExceptionsService
+    protected readonly service: ProfessionalAvailabiltyExceptionsService,
+    protected readonly rolesBuilder: nestAccessControl.RolesBuilder
   ) {}
 
+  @graphql.Query(() => MetaQueryPayload)
+  @nestAccessControl.UseRoles({
+    resource: "ProfessionalAvailabiltyExceptions",
+    action: "read",
+    possession: "any",
+  })
   async _professionalAvailabiltyExceptionsItemsMeta(
     @graphql.Args() args: ProfessionalAvailabiltyExceptionsCountArgs
   ): Promise<MetaQueryPayload> {
@@ -36,14 +50,26 @@ export class ProfessionalAvailabiltyExceptionsResolverBase {
     };
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @graphql.Query(() => [ProfessionalAvailabiltyExceptions])
+  @nestAccessControl.UseRoles({
+    resource: "ProfessionalAvailabiltyExceptions",
+    action: "read",
+    possession: "any",
+  })
   async professionalAvailabiltyExceptionsItems(
     @graphql.Args() args: ProfessionalAvailabiltyExceptionsFindManyArgs
   ): Promise<ProfessionalAvailabiltyExceptions[]> {
     return this.service.professionalAvailabiltyExceptionsItems(args);
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @graphql.Query(() => ProfessionalAvailabiltyExceptions, { nullable: true })
+  @nestAccessControl.UseRoles({
+    resource: "ProfessionalAvailabiltyExceptions",
+    action: "read",
+    possession: "own",
+  })
   async professionalAvailabiltyExceptions(
     @graphql.Args() args: ProfessionalAvailabiltyExceptionsFindUniqueArgs
   ): Promise<ProfessionalAvailabiltyExceptions | null> {
@@ -54,7 +80,13 @@ export class ProfessionalAvailabiltyExceptionsResolverBase {
     return result;
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @graphql.Mutation(() => ProfessionalAvailabiltyExceptions)
+  @nestAccessControl.UseRoles({
+    resource: "ProfessionalAvailabiltyExceptions",
+    action: "create",
+    possession: "any",
+  })
   async createProfessionalAvailabiltyExceptions(
     @graphql.Args() args: CreateProfessionalAvailabiltyExceptionsArgs
   ): Promise<ProfessionalAvailabiltyExceptions> {
@@ -64,7 +96,13 @@ export class ProfessionalAvailabiltyExceptionsResolverBase {
     });
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @graphql.Mutation(() => ProfessionalAvailabiltyExceptions)
+  @nestAccessControl.UseRoles({
+    resource: "ProfessionalAvailabiltyExceptions",
+    action: "update",
+    possession: "any",
+  })
   async updateProfessionalAvailabiltyExceptions(
     @graphql.Args() args: UpdateProfessionalAvailabiltyExceptionsArgs
   ): Promise<ProfessionalAvailabiltyExceptions | null> {
@@ -84,6 +122,11 @@ export class ProfessionalAvailabiltyExceptionsResolverBase {
   }
 
   @graphql.Mutation(() => ProfessionalAvailabiltyExceptions)
+  @nestAccessControl.UseRoles({
+    resource: "ProfessionalAvailabiltyExceptions",
+    action: "delete",
+    possession: "any",
+  })
   async deleteProfessionalAvailabiltyExceptions(
     @graphql.Args() args: DeleteProfessionalAvailabiltyExceptionsArgs
   ): Promise<ProfessionalAvailabiltyExceptions | null> {

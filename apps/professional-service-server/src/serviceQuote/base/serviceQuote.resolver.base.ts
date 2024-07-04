@@ -13,6 +13,12 @@ import * as graphql from "@nestjs/graphql";
 import { GraphQLError } from "graphql";
 import { isRecordNotFoundError } from "../../prisma.util";
 import { MetaQueryPayload } from "../../util/MetaQueryPayload";
+import * as nestAccessControl from "nest-access-control";
+import * as gqlACGuard from "../../auth/gqlAC.guard";
+import { GqlDefaultAuthGuard } from "../../auth/gqlDefaultAuth.guard";
+import * as common from "@nestjs/common";
+import { AclFilterResponseInterceptor } from "../../interceptors/aclFilterResponse.interceptor";
+import { AclValidateRequestInterceptor } from "../../interceptors/aclValidateRequest.interceptor";
 import { ServiceQuote } from "./ServiceQuote";
 import { ServiceQuoteCountArgs } from "./ServiceQuoteCountArgs";
 import { ServiceQuoteFindManyArgs } from "./ServiceQuoteFindManyArgs";
@@ -21,10 +27,20 @@ import { CreateServiceQuoteArgs } from "./CreateServiceQuoteArgs";
 import { UpdateServiceQuoteArgs } from "./UpdateServiceQuoteArgs";
 import { DeleteServiceQuoteArgs } from "./DeleteServiceQuoteArgs";
 import { ServiceQuoteService } from "../serviceQuote.service";
+@common.UseGuards(GqlDefaultAuthGuard, gqlACGuard.GqlACGuard)
 @graphql.Resolver(() => ServiceQuote)
 export class ServiceQuoteResolverBase {
-  constructor(protected readonly service: ServiceQuoteService) {}
+  constructor(
+    protected readonly service: ServiceQuoteService,
+    protected readonly rolesBuilder: nestAccessControl.RolesBuilder
+  ) {}
 
+  @graphql.Query(() => MetaQueryPayload)
+  @nestAccessControl.UseRoles({
+    resource: "ServiceQuote",
+    action: "read",
+    possession: "any",
+  })
   async _serviceQuotesMeta(
     @graphql.Args() args: ServiceQuoteCountArgs
   ): Promise<MetaQueryPayload> {
@@ -34,14 +50,26 @@ export class ServiceQuoteResolverBase {
     };
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @graphql.Query(() => [ServiceQuote])
+  @nestAccessControl.UseRoles({
+    resource: "ServiceQuote",
+    action: "read",
+    possession: "any",
+  })
   async serviceQuotes(
     @graphql.Args() args: ServiceQuoteFindManyArgs
   ): Promise<ServiceQuote[]> {
     return this.service.serviceQuotes(args);
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @graphql.Query(() => ServiceQuote, { nullable: true })
+  @nestAccessControl.UseRoles({
+    resource: "ServiceQuote",
+    action: "read",
+    possession: "own",
+  })
   async serviceQuote(
     @graphql.Args() args: ServiceQuoteFindUniqueArgs
   ): Promise<ServiceQuote | null> {
@@ -52,7 +80,13 @@ export class ServiceQuoteResolverBase {
     return result;
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @graphql.Mutation(() => ServiceQuote)
+  @nestAccessControl.UseRoles({
+    resource: "ServiceQuote",
+    action: "create",
+    possession: "any",
+  })
   async createServiceQuote(
     @graphql.Args() args: CreateServiceQuoteArgs
   ): Promise<ServiceQuote> {
@@ -62,7 +96,13 @@ export class ServiceQuoteResolverBase {
     });
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @graphql.Mutation(() => ServiceQuote)
+  @nestAccessControl.UseRoles({
+    resource: "ServiceQuote",
+    action: "update",
+    possession: "any",
+  })
   async updateServiceQuote(
     @graphql.Args() args: UpdateServiceQuoteArgs
   ): Promise<ServiceQuote | null> {
@@ -82,6 +122,11 @@ export class ServiceQuoteResolverBase {
   }
 
   @graphql.Mutation(() => ServiceQuote)
+  @nestAccessControl.UseRoles({
+    resource: "ServiceQuote",
+    action: "delete",
+    possession: "any",
+  })
   async deleteServiceQuote(
     @graphql.Args() args: DeleteServiceQuoteArgs
   ): Promise<ServiceQuote | null> {

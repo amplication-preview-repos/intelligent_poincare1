@@ -16,17 +16,35 @@ import * as errors from "../../errors";
 import { Request } from "express";
 import { plainToClass } from "class-transformer";
 import { ApiNestedQuery } from "../../decorators/api-nested-query.decorator";
+import * as nestAccessControl from "nest-access-control";
+import * as defaultAuthGuard from "../../auth/defaultAuth.guard";
 import { DayOfWeekService } from "../dayOfWeek.service";
+import { AclValidateRequestInterceptor } from "../../interceptors/aclValidateRequest.interceptor";
+import { AclFilterResponseInterceptor } from "../../interceptors/aclFilterResponse.interceptor";
 import { DayOfWeekCreateInput } from "./DayOfWeekCreateInput";
 import { DayOfWeek } from "./DayOfWeek";
 import { DayOfWeekFindManyArgs } from "./DayOfWeekFindManyArgs";
 import { DayOfWeekWhereUniqueInput } from "./DayOfWeekWhereUniqueInput";
 import { DayOfWeekUpdateInput } from "./DayOfWeekUpdateInput";
 
+@swagger.ApiBearerAuth()
+@common.UseGuards(defaultAuthGuard.DefaultAuthGuard, nestAccessControl.ACGuard)
 export class DayOfWeekControllerBase {
-  constructor(protected readonly service: DayOfWeekService) {}
+  constructor(
+    protected readonly service: DayOfWeekService,
+    protected readonly rolesBuilder: nestAccessControl.RolesBuilder
+  ) {}
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @common.Post()
   @swagger.ApiCreatedResponse({ type: DayOfWeek })
+  @nestAccessControl.UseRoles({
+    resource: "DayOfWeek",
+    action: "create",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async createDayOfWeek(
     @common.Body() data: DayOfWeekCreateInput
   ): Promise<DayOfWeek> {
@@ -41,9 +59,18 @@ export class DayOfWeekControllerBase {
     });
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @common.Get()
   @swagger.ApiOkResponse({ type: [DayOfWeek] })
   @ApiNestedQuery(DayOfWeekFindManyArgs)
+  @nestAccessControl.UseRoles({
+    resource: "DayOfWeek",
+    action: "read",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async dayOfWeeks(@common.Req() request: Request): Promise<DayOfWeek[]> {
     const args = plainToClass(DayOfWeekFindManyArgs, request.query);
     return this.service.dayOfWeeks({
@@ -57,9 +84,18 @@ export class DayOfWeekControllerBase {
     });
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @common.Get("/:id")
   @swagger.ApiOkResponse({ type: DayOfWeek })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "DayOfWeek",
+    action: "read",
+    possession: "own",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async dayOfWeek(
     @common.Param() params: DayOfWeekWhereUniqueInput
   ): Promise<DayOfWeek | null> {
@@ -80,9 +116,18 @@ export class DayOfWeekControllerBase {
     return result;
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @common.Patch("/:id")
   @swagger.ApiOkResponse({ type: DayOfWeek })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "DayOfWeek",
+    action: "update",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async updateDayOfWeek(
     @common.Param() params: DayOfWeekWhereUniqueInput,
     @common.Body() data: DayOfWeekUpdateInput
@@ -111,6 +156,14 @@ export class DayOfWeekControllerBase {
   @common.Delete("/:id")
   @swagger.ApiOkResponse({ type: DayOfWeek })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "DayOfWeek",
+    action: "delete",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async deleteDayOfWeek(
     @common.Param() params: DayOfWeekWhereUniqueInput
   ): Promise<DayOfWeek | null> {

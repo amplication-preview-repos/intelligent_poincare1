@@ -16,17 +16,35 @@ import * as errors from "../../errors";
 import { Request } from "express";
 import { plainToClass } from "class-transformer";
 import { ApiNestedQuery } from "../../decorators/api-nested-query.decorator";
+import * as nestAccessControl from "nest-access-control";
+import * as defaultAuthGuard from "../../auth/defaultAuth.guard";
 import { PaymentStatusService } from "../paymentStatus.service";
+import { AclValidateRequestInterceptor } from "../../interceptors/aclValidateRequest.interceptor";
+import { AclFilterResponseInterceptor } from "../../interceptors/aclFilterResponse.interceptor";
 import { PaymentStatusCreateInput } from "./PaymentStatusCreateInput";
 import { PaymentStatus } from "./PaymentStatus";
 import { PaymentStatusFindManyArgs } from "./PaymentStatusFindManyArgs";
 import { PaymentStatusWhereUniqueInput } from "./PaymentStatusWhereUniqueInput";
 import { PaymentStatusUpdateInput } from "./PaymentStatusUpdateInput";
 
+@swagger.ApiBearerAuth()
+@common.UseGuards(defaultAuthGuard.DefaultAuthGuard, nestAccessControl.ACGuard)
 export class PaymentStatusControllerBase {
-  constructor(protected readonly service: PaymentStatusService) {}
+  constructor(
+    protected readonly service: PaymentStatusService,
+    protected readonly rolesBuilder: nestAccessControl.RolesBuilder
+  ) {}
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @common.Post()
   @swagger.ApiCreatedResponse({ type: PaymentStatus })
+  @nestAccessControl.UseRoles({
+    resource: "PaymentStatus",
+    action: "create",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async createPaymentStatus(
     @common.Body() data: PaymentStatusCreateInput
   ): Promise<PaymentStatus> {
@@ -42,9 +60,18 @@ export class PaymentStatusControllerBase {
     });
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @common.Get()
   @swagger.ApiOkResponse({ type: [PaymentStatus] })
   @ApiNestedQuery(PaymentStatusFindManyArgs)
+  @nestAccessControl.UseRoles({
+    resource: "PaymentStatus",
+    action: "read",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async paymentStatuses(
     @common.Req() request: Request
   ): Promise<PaymentStatus[]> {
@@ -61,9 +88,18 @@ export class PaymentStatusControllerBase {
     });
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @common.Get("/:id")
   @swagger.ApiOkResponse({ type: PaymentStatus })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "PaymentStatus",
+    action: "read",
+    possession: "own",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async paymentStatus(
     @common.Param() params: PaymentStatusWhereUniqueInput
   ): Promise<PaymentStatus | null> {
@@ -85,9 +121,18 @@ export class PaymentStatusControllerBase {
     return result;
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @common.Patch("/:id")
   @swagger.ApiOkResponse({ type: PaymentStatus })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "PaymentStatus",
+    action: "update",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async updatePaymentStatus(
     @common.Param() params: PaymentStatusWhereUniqueInput,
     @common.Body() data: PaymentStatusUpdateInput
@@ -117,6 +162,14 @@ export class PaymentStatusControllerBase {
   @common.Delete("/:id")
   @swagger.ApiOkResponse({ type: PaymentStatus })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "PaymentStatus",
+    action: "delete",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async deletePaymentStatus(
     @common.Param() params: PaymentStatusWhereUniqueInput
   ): Promise<PaymentStatus | null> {

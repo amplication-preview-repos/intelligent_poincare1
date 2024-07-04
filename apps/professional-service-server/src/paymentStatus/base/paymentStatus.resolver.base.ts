@@ -13,6 +13,12 @@ import * as graphql from "@nestjs/graphql";
 import { GraphQLError } from "graphql";
 import { isRecordNotFoundError } from "../../prisma.util";
 import { MetaQueryPayload } from "../../util/MetaQueryPayload";
+import * as nestAccessControl from "nest-access-control";
+import * as gqlACGuard from "../../auth/gqlAC.guard";
+import { GqlDefaultAuthGuard } from "../../auth/gqlDefaultAuth.guard";
+import * as common from "@nestjs/common";
+import { AclFilterResponseInterceptor } from "../../interceptors/aclFilterResponse.interceptor";
+import { AclValidateRequestInterceptor } from "../../interceptors/aclValidateRequest.interceptor";
 import { PaymentStatus } from "./PaymentStatus";
 import { PaymentStatusCountArgs } from "./PaymentStatusCountArgs";
 import { PaymentStatusFindManyArgs } from "./PaymentStatusFindManyArgs";
@@ -21,10 +27,20 @@ import { CreatePaymentStatusArgs } from "./CreatePaymentStatusArgs";
 import { UpdatePaymentStatusArgs } from "./UpdatePaymentStatusArgs";
 import { DeletePaymentStatusArgs } from "./DeletePaymentStatusArgs";
 import { PaymentStatusService } from "../paymentStatus.service";
+@common.UseGuards(GqlDefaultAuthGuard, gqlACGuard.GqlACGuard)
 @graphql.Resolver(() => PaymentStatus)
 export class PaymentStatusResolverBase {
-  constructor(protected readonly service: PaymentStatusService) {}
+  constructor(
+    protected readonly service: PaymentStatusService,
+    protected readonly rolesBuilder: nestAccessControl.RolesBuilder
+  ) {}
 
+  @graphql.Query(() => MetaQueryPayload)
+  @nestAccessControl.UseRoles({
+    resource: "PaymentStatus",
+    action: "read",
+    possession: "any",
+  })
   async _paymentStatusesMeta(
     @graphql.Args() args: PaymentStatusCountArgs
   ): Promise<MetaQueryPayload> {
@@ -34,14 +50,26 @@ export class PaymentStatusResolverBase {
     };
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @graphql.Query(() => [PaymentStatus])
+  @nestAccessControl.UseRoles({
+    resource: "PaymentStatus",
+    action: "read",
+    possession: "any",
+  })
   async paymentStatuses(
     @graphql.Args() args: PaymentStatusFindManyArgs
   ): Promise<PaymentStatus[]> {
     return this.service.paymentStatuses(args);
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @graphql.Query(() => PaymentStatus, { nullable: true })
+  @nestAccessControl.UseRoles({
+    resource: "PaymentStatus",
+    action: "read",
+    possession: "own",
+  })
   async paymentStatus(
     @graphql.Args() args: PaymentStatusFindUniqueArgs
   ): Promise<PaymentStatus | null> {
@@ -52,7 +80,13 @@ export class PaymentStatusResolverBase {
     return result;
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @graphql.Mutation(() => PaymentStatus)
+  @nestAccessControl.UseRoles({
+    resource: "PaymentStatus",
+    action: "create",
+    possession: "any",
+  })
   async createPaymentStatus(
     @graphql.Args() args: CreatePaymentStatusArgs
   ): Promise<PaymentStatus> {
@@ -62,7 +96,13 @@ export class PaymentStatusResolverBase {
     });
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @graphql.Mutation(() => PaymentStatus)
+  @nestAccessControl.UseRoles({
+    resource: "PaymentStatus",
+    action: "update",
+    possession: "any",
+  })
   async updatePaymentStatus(
     @graphql.Args() args: UpdatePaymentStatusArgs
   ): Promise<PaymentStatus | null> {
@@ -82,6 +122,11 @@ export class PaymentStatusResolverBase {
   }
 
   @graphql.Mutation(() => PaymentStatus)
+  @nestAccessControl.UseRoles({
+    resource: "PaymentStatus",
+    action: "delete",
+    possession: "any",
+  })
   async deletePaymentStatus(
     @graphql.Args() args: DeletePaymentStatusArgs
   ): Promise<PaymentStatus | null> {

@@ -16,17 +16,35 @@ import * as errors from "../../errors";
 import { Request } from "express";
 import { plainToClass } from "class-transformer";
 import { ApiNestedQuery } from "../../decorators/api-nested-query.decorator";
+import * as nestAccessControl from "nest-access-control";
+import * as defaultAuthGuard from "../../auth/defaultAuth.guard";
 import { ServiceQuoteService } from "../serviceQuote.service";
+import { AclValidateRequestInterceptor } from "../../interceptors/aclValidateRequest.interceptor";
+import { AclFilterResponseInterceptor } from "../../interceptors/aclFilterResponse.interceptor";
 import { ServiceQuoteCreateInput } from "./ServiceQuoteCreateInput";
 import { ServiceQuote } from "./ServiceQuote";
 import { ServiceQuoteFindManyArgs } from "./ServiceQuoteFindManyArgs";
 import { ServiceQuoteWhereUniqueInput } from "./ServiceQuoteWhereUniqueInput";
 import { ServiceQuoteUpdateInput } from "./ServiceQuoteUpdateInput";
 
+@swagger.ApiBearerAuth()
+@common.UseGuards(defaultAuthGuard.DefaultAuthGuard, nestAccessControl.ACGuard)
 export class ServiceQuoteControllerBase {
-  constructor(protected readonly service: ServiceQuoteService) {}
+  constructor(
+    protected readonly service: ServiceQuoteService,
+    protected readonly rolesBuilder: nestAccessControl.RolesBuilder
+  ) {}
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @common.Post()
   @swagger.ApiCreatedResponse({ type: ServiceQuote })
+  @nestAccessControl.UseRoles({
+    resource: "ServiceQuote",
+    action: "create",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async createServiceQuote(
     @common.Body() data: ServiceQuoteCreateInput
   ): Promise<ServiceQuote> {
@@ -44,9 +62,18 @@ export class ServiceQuoteControllerBase {
     });
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @common.Get()
   @swagger.ApiOkResponse({ type: [ServiceQuote] })
   @ApiNestedQuery(ServiceQuoteFindManyArgs)
+  @nestAccessControl.UseRoles({
+    resource: "ServiceQuote",
+    action: "read",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async serviceQuotes(@common.Req() request: Request): Promise<ServiceQuote[]> {
     const args = plainToClass(ServiceQuoteFindManyArgs, request.query);
     return this.service.serviceQuotes({
@@ -63,9 +90,18 @@ export class ServiceQuoteControllerBase {
     });
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @common.Get("/:id")
   @swagger.ApiOkResponse({ type: ServiceQuote })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "ServiceQuote",
+    action: "read",
+    possession: "own",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async serviceQuote(
     @common.Param() params: ServiceQuoteWhereUniqueInput
   ): Promise<ServiceQuote | null> {
@@ -89,9 +125,18 @@ export class ServiceQuoteControllerBase {
     return result;
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @common.Patch("/:id")
   @swagger.ApiOkResponse({ type: ServiceQuote })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "ServiceQuote",
+    action: "update",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async updateServiceQuote(
     @common.Param() params: ServiceQuoteWhereUniqueInput,
     @common.Body() data: ServiceQuoteUpdateInput
@@ -123,6 +168,14 @@ export class ServiceQuoteControllerBase {
   @common.Delete("/:id")
   @swagger.ApiOkResponse({ type: ServiceQuote })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "ServiceQuote",
+    action: "delete",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async deleteServiceQuote(
     @common.Param() params: ServiceQuoteWhereUniqueInput
   ): Promise<ServiceQuote | null> {

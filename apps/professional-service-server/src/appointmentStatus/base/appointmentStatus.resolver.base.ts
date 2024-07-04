@@ -13,6 +13,12 @@ import * as graphql from "@nestjs/graphql";
 import { GraphQLError } from "graphql";
 import { isRecordNotFoundError } from "../../prisma.util";
 import { MetaQueryPayload } from "../../util/MetaQueryPayload";
+import * as nestAccessControl from "nest-access-control";
+import * as gqlACGuard from "../../auth/gqlAC.guard";
+import { GqlDefaultAuthGuard } from "../../auth/gqlDefaultAuth.guard";
+import * as common from "@nestjs/common";
+import { AclFilterResponseInterceptor } from "../../interceptors/aclFilterResponse.interceptor";
+import { AclValidateRequestInterceptor } from "../../interceptors/aclValidateRequest.interceptor";
 import { AppointmentStatus } from "./AppointmentStatus";
 import { AppointmentStatusCountArgs } from "./AppointmentStatusCountArgs";
 import { AppointmentStatusFindManyArgs } from "./AppointmentStatusFindManyArgs";
@@ -21,10 +27,20 @@ import { CreateAppointmentStatusArgs } from "./CreateAppointmentStatusArgs";
 import { UpdateAppointmentStatusArgs } from "./UpdateAppointmentStatusArgs";
 import { DeleteAppointmentStatusArgs } from "./DeleteAppointmentStatusArgs";
 import { AppointmentStatusService } from "../appointmentStatus.service";
+@common.UseGuards(GqlDefaultAuthGuard, gqlACGuard.GqlACGuard)
 @graphql.Resolver(() => AppointmentStatus)
 export class AppointmentStatusResolverBase {
-  constructor(protected readonly service: AppointmentStatusService) {}
+  constructor(
+    protected readonly service: AppointmentStatusService,
+    protected readonly rolesBuilder: nestAccessControl.RolesBuilder
+  ) {}
 
+  @graphql.Query(() => MetaQueryPayload)
+  @nestAccessControl.UseRoles({
+    resource: "AppointmentStatus",
+    action: "read",
+    possession: "any",
+  })
   async _appointmentStatusesMeta(
     @graphql.Args() args: AppointmentStatusCountArgs
   ): Promise<MetaQueryPayload> {
@@ -34,14 +50,26 @@ export class AppointmentStatusResolverBase {
     };
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @graphql.Query(() => [AppointmentStatus])
+  @nestAccessControl.UseRoles({
+    resource: "AppointmentStatus",
+    action: "read",
+    possession: "any",
+  })
   async appointmentStatuses(
     @graphql.Args() args: AppointmentStatusFindManyArgs
   ): Promise<AppointmentStatus[]> {
     return this.service.appointmentStatuses(args);
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @graphql.Query(() => AppointmentStatus, { nullable: true })
+  @nestAccessControl.UseRoles({
+    resource: "AppointmentStatus",
+    action: "read",
+    possession: "own",
+  })
   async appointmentStatus(
     @graphql.Args() args: AppointmentStatusFindUniqueArgs
   ): Promise<AppointmentStatus | null> {
@@ -52,7 +80,13 @@ export class AppointmentStatusResolverBase {
     return result;
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @graphql.Mutation(() => AppointmentStatus)
+  @nestAccessControl.UseRoles({
+    resource: "AppointmentStatus",
+    action: "create",
+    possession: "any",
+  })
   async createAppointmentStatus(
     @graphql.Args() args: CreateAppointmentStatusArgs
   ): Promise<AppointmentStatus> {
@@ -62,7 +96,13 @@ export class AppointmentStatusResolverBase {
     });
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @graphql.Mutation(() => AppointmentStatus)
+  @nestAccessControl.UseRoles({
+    resource: "AppointmentStatus",
+    action: "update",
+    possession: "any",
+  })
   async updateAppointmentStatus(
     @graphql.Args() args: UpdateAppointmentStatusArgs
   ): Promise<AppointmentStatus | null> {
@@ -82,6 +122,11 @@ export class AppointmentStatusResolverBase {
   }
 
   @graphql.Mutation(() => AppointmentStatus)
+  @nestAccessControl.UseRoles({
+    resource: "AppointmentStatus",
+    action: "delete",
+    possession: "any",
+  })
   async deleteAppointmentStatus(
     @graphql.Args() args: DeleteAppointmentStatusArgs
   ): Promise<AppointmentStatus | null> {

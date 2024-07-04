@@ -13,6 +13,12 @@ import * as graphql from "@nestjs/graphql";
 import { GraphQLError } from "graphql";
 import { isRecordNotFoundError } from "../../prisma.util";
 import { MetaQueryPayload } from "../../util/MetaQueryPayload";
+import * as nestAccessControl from "nest-access-control";
+import * as gqlACGuard from "../../auth/gqlAC.guard";
+import { GqlDefaultAuthGuard } from "../../auth/gqlDefaultAuth.guard";
+import * as common from "@nestjs/common";
+import { AclFilterResponseInterceptor } from "../../interceptors/aclFilterResponse.interceptor";
+import { AclValidateRequestInterceptor } from "../../interceptors/aclValidateRequest.interceptor";
 import { ServiceType } from "./ServiceType";
 import { ServiceTypeCountArgs } from "./ServiceTypeCountArgs";
 import { ServiceTypeFindManyArgs } from "./ServiceTypeFindManyArgs";
@@ -21,10 +27,20 @@ import { CreateServiceTypeArgs } from "./CreateServiceTypeArgs";
 import { UpdateServiceTypeArgs } from "./UpdateServiceTypeArgs";
 import { DeleteServiceTypeArgs } from "./DeleteServiceTypeArgs";
 import { ServiceTypeService } from "../serviceType.service";
+@common.UseGuards(GqlDefaultAuthGuard, gqlACGuard.GqlACGuard)
 @graphql.Resolver(() => ServiceType)
 export class ServiceTypeResolverBase {
-  constructor(protected readonly service: ServiceTypeService) {}
+  constructor(
+    protected readonly service: ServiceTypeService,
+    protected readonly rolesBuilder: nestAccessControl.RolesBuilder
+  ) {}
 
+  @graphql.Query(() => MetaQueryPayload)
+  @nestAccessControl.UseRoles({
+    resource: "ServiceType",
+    action: "read",
+    possession: "any",
+  })
   async _serviceTypesMeta(
     @graphql.Args() args: ServiceTypeCountArgs
   ): Promise<MetaQueryPayload> {
@@ -34,14 +50,26 @@ export class ServiceTypeResolverBase {
     };
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @graphql.Query(() => [ServiceType])
+  @nestAccessControl.UseRoles({
+    resource: "ServiceType",
+    action: "read",
+    possession: "any",
+  })
   async serviceTypes(
     @graphql.Args() args: ServiceTypeFindManyArgs
   ): Promise<ServiceType[]> {
     return this.service.serviceTypes(args);
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @graphql.Query(() => ServiceType, { nullable: true })
+  @nestAccessControl.UseRoles({
+    resource: "ServiceType",
+    action: "read",
+    possession: "own",
+  })
   async serviceType(
     @graphql.Args() args: ServiceTypeFindUniqueArgs
   ): Promise<ServiceType | null> {
@@ -52,7 +80,13 @@ export class ServiceTypeResolverBase {
     return result;
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @graphql.Mutation(() => ServiceType)
+  @nestAccessControl.UseRoles({
+    resource: "ServiceType",
+    action: "create",
+    possession: "any",
+  })
   async createServiceType(
     @graphql.Args() args: CreateServiceTypeArgs
   ): Promise<ServiceType> {
@@ -62,7 +96,13 @@ export class ServiceTypeResolverBase {
     });
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @graphql.Mutation(() => ServiceType)
+  @nestAccessControl.UseRoles({
+    resource: "ServiceType",
+    action: "update",
+    possession: "any",
+  })
   async updateServiceType(
     @graphql.Args() args: UpdateServiceTypeArgs
   ): Promise<ServiceType | null> {
@@ -82,6 +122,11 @@ export class ServiceTypeResolverBase {
   }
 
   @graphql.Mutation(() => ServiceType)
+  @nestAccessControl.UseRoles({
+    resource: "ServiceType",
+    action: "delete",
+    possession: "any",
+  })
   async deleteServiceType(
     @graphql.Args() args: DeleteServiceTypeArgs
   ): Promise<ServiceType | null> {

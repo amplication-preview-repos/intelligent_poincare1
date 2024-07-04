@@ -16,17 +16,35 @@ import * as errors from "../../errors";
 import { Request } from "express";
 import { plainToClass } from "class-transformer";
 import { ApiNestedQuery } from "../../decorators/api-nested-query.decorator";
+import * as nestAccessControl from "nest-access-control";
+import * as defaultAuthGuard from "../../auth/defaultAuth.guard";
 import { ServiceTimeSlotService } from "../serviceTimeSlot.service";
+import { AclValidateRequestInterceptor } from "../../interceptors/aclValidateRequest.interceptor";
+import { AclFilterResponseInterceptor } from "../../interceptors/aclFilterResponse.interceptor";
 import { ServiceTimeSlotCreateInput } from "./ServiceTimeSlotCreateInput";
 import { ServiceTimeSlot } from "./ServiceTimeSlot";
 import { ServiceTimeSlotFindManyArgs } from "./ServiceTimeSlotFindManyArgs";
 import { ServiceTimeSlotWhereUniqueInput } from "./ServiceTimeSlotWhereUniqueInput";
 import { ServiceTimeSlotUpdateInput } from "./ServiceTimeSlotUpdateInput";
 
+@swagger.ApiBearerAuth()
+@common.UseGuards(defaultAuthGuard.DefaultAuthGuard, nestAccessControl.ACGuard)
 export class ServiceTimeSlotControllerBase {
-  constructor(protected readonly service: ServiceTimeSlotService) {}
+  constructor(
+    protected readonly service: ServiceTimeSlotService,
+    protected readonly rolesBuilder: nestAccessControl.RolesBuilder
+  ) {}
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @common.Post()
   @swagger.ApiCreatedResponse({ type: ServiceTimeSlot })
+  @nestAccessControl.UseRoles({
+    resource: "ServiceTimeSlot",
+    action: "create",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async createServiceTimeSlot(
     @common.Body() data: ServiceTimeSlotCreateInput
   ): Promise<ServiceTimeSlot> {
@@ -43,9 +61,18 @@ export class ServiceTimeSlotControllerBase {
     });
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @common.Get()
   @swagger.ApiOkResponse({ type: [ServiceTimeSlot] })
   @ApiNestedQuery(ServiceTimeSlotFindManyArgs)
+  @nestAccessControl.UseRoles({
+    resource: "ServiceTimeSlot",
+    action: "read",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async serviceTimeSlots(
     @common.Req() request: Request
   ): Promise<ServiceTimeSlot[]> {
@@ -63,9 +90,18 @@ export class ServiceTimeSlotControllerBase {
     });
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @common.Get("/:id")
   @swagger.ApiOkResponse({ type: ServiceTimeSlot })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "ServiceTimeSlot",
+    action: "read",
+    possession: "own",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async serviceTimeSlot(
     @common.Param() params: ServiceTimeSlotWhereUniqueInput
   ): Promise<ServiceTimeSlot | null> {
@@ -88,9 +124,18 @@ export class ServiceTimeSlotControllerBase {
     return result;
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @common.Patch("/:id")
   @swagger.ApiOkResponse({ type: ServiceTimeSlot })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "ServiceTimeSlot",
+    action: "update",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async updateServiceTimeSlot(
     @common.Param() params: ServiceTimeSlotWhereUniqueInput,
     @common.Body() data: ServiceTimeSlotUpdateInput
@@ -121,6 +166,14 @@ export class ServiceTimeSlotControllerBase {
   @common.Delete("/:id")
   @swagger.ApiOkResponse({ type: ServiceTimeSlot })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "ServiceTimeSlot",
+    action: "delete",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async deleteServiceTimeSlot(
     @common.Param() params: ServiceTimeSlotWhereUniqueInput
   ): Promise<ServiceTimeSlot | null> {

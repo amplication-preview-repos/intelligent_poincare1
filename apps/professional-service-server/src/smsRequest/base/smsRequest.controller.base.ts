@@ -16,17 +16,35 @@ import * as errors from "../../errors";
 import { Request } from "express";
 import { plainToClass } from "class-transformer";
 import { ApiNestedQuery } from "../../decorators/api-nested-query.decorator";
+import * as nestAccessControl from "nest-access-control";
+import * as defaultAuthGuard from "../../auth/defaultAuth.guard";
 import { SmsRequestService } from "../smsRequest.service";
+import { AclValidateRequestInterceptor } from "../../interceptors/aclValidateRequest.interceptor";
+import { AclFilterResponseInterceptor } from "../../interceptors/aclFilterResponse.interceptor";
 import { SmsRequestCreateInput } from "./SmsRequestCreateInput";
 import { SmsRequest } from "./SmsRequest";
 import { SmsRequestFindManyArgs } from "./SmsRequestFindManyArgs";
 import { SmsRequestWhereUniqueInput } from "./SmsRequestWhereUniqueInput";
 import { SmsRequestUpdateInput } from "./SmsRequestUpdateInput";
 
+@swagger.ApiBearerAuth()
+@common.UseGuards(defaultAuthGuard.DefaultAuthGuard, nestAccessControl.ACGuard)
 export class SmsRequestControllerBase {
-  constructor(protected readonly service: SmsRequestService) {}
+  constructor(
+    protected readonly service: SmsRequestService,
+    protected readonly rolesBuilder: nestAccessControl.RolesBuilder
+  ) {}
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @common.Post()
   @swagger.ApiCreatedResponse({ type: SmsRequest })
+  @nestAccessControl.UseRoles({
+    resource: "SmsRequest",
+    action: "create",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async createSmsRequest(
     @common.Body() data: SmsRequestCreateInput
   ): Promise<SmsRequest> {
@@ -44,9 +62,18 @@ export class SmsRequestControllerBase {
     });
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @common.Get()
   @swagger.ApiOkResponse({ type: [SmsRequest] })
   @ApiNestedQuery(SmsRequestFindManyArgs)
+  @nestAccessControl.UseRoles({
+    resource: "SmsRequest",
+    action: "read",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async smsRequests(@common.Req() request: Request): Promise<SmsRequest[]> {
     const args = plainToClass(SmsRequestFindManyArgs, request.query);
     return this.service.smsRequests({
@@ -63,9 +90,18 @@ export class SmsRequestControllerBase {
     });
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @common.Get("/:id")
   @swagger.ApiOkResponse({ type: SmsRequest })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "SmsRequest",
+    action: "read",
+    possession: "own",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async smsRequest(
     @common.Param() params: SmsRequestWhereUniqueInput
   ): Promise<SmsRequest | null> {
@@ -89,9 +125,18 @@ export class SmsRequestControllerBase {
     return result;
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @common.Patch("/:id")
   @swagger.ApiOkResponse({ type: SmsRequest })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "SmsRequest",
+    action: "update",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async updateSmsRequest(
     @common.Param() params: SmsRequestWhereUniqueInput,
     @common.Body() data: SmsRequestUpdateInput
@@ -123,6 +168,14 @@ export class SmsRequestControllerBase {
   @common.Delete("/:id")
   @swagger.ApiOkResponse({ type: SmsRequest })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "SmsRequest",
+    action: "delete",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async deleteSmsRequest(
     @common.Param() params: SmsRequestWhereUniqueInput
   ): Promise<SmsRequest | null> {

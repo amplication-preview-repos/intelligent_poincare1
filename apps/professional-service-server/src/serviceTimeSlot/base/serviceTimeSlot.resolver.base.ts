@@ -13,6 +13,12 @@ import * as graphql from "@nestjs/graphql";
 import { GraphQLError } from "graphql";
 import { isRecordNotFoundError } from "../../prisma.util";
 import { MetaQueryPayload } from "../../util/MetaQueryPayload";
+import * as nestAccessControl from "nest-access-control";
+import * as gqlACGuard from "../../auth/gqlAC.guard";
+import { GqlDefaultAuthGuard } from "../../auth/gqlDefaultAuth.guard";
+import * as common from "@nestjs/common";
+import { AclFilterResponseInterceptor } from "../../interceptors/aclFilterResponse.interceptor";
+import { AclValidateRequestInterceptor } from "../../interceptors/aclValidateRequest.interceptor";
 import { ServiceTimeSlot } from "./ServiceTimeSlot";
 import { ServiceTimeSlotCountArgs } from "./ServiceTimeSlotCountArgs";
 import { ServiceTimeSlotFindManyArgs } from "./ServiceTimeSlotFindManyArgs";
@@ -21,10 +27,20 @@ import { CreateServiceTimeSlotArgs } from "./CreateServiceTimeSlotArgs";
 import { UpdateServiceTimeSlotArgs } from "./UpdateServiceTimeSlotArgs";
 import { DeleteServiceTimeSlotArgs } from "./DeleteServiceTimeSlotArgs";
 import { ServiceTimeSlotService } from "../serviceTimeSlot.service";
+@common.UseGuards(GqlDefaultAuthGuard, gqlACGuard.GqlACGuard)
 @graphql.Resolver(() => ServiceTimeSlot)
 export class ServiceTimeSlotResolverBase {
-  constructor(protected readonly service: ServiceTimeSlotService) {}
+  constructor(
+    protected readonly service: ServiceTimeSlotService,
+    protected readonly rolesBuilder: nestAccessControl.RolesBuilder
+  ) {}
 
+  @graphql.Query(() => MetaQueryPayload)
+  @nestAccessControl.UseRoles({
+    resource: "ServiceTimeSlot",
+    action: "read",
+    possession: "any",
+  })
   async _serviceTimeSlotsMeta(
     @graphql.Args() args: ServiceTimeSlotCountArgs
   ): Promise<MetaQueryPayload> {
@@ -34,14 +50,26 @@ export class ServiceTimeSlotResolverBase {
     };
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @graphql.Query(() => [ServiceTimeSlot])
+  @nestAccessControl.UseRoles({
+    resource: "ServiceTimeSlot",
+    action: "read",
+    possession: "any",
+  })
   async serviceTimeSlots(
     @graphql.Args() args: ServiceTimeSlotFindManyArgs
   ): Promise<ServiceTimeSlot[]> {
     return this.service.serviceTimeSlots(args);
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @graphql.Query(() => ServiceTimeSlot, { nullable: true })
+  @nestAccessControl.UseRoles({
+    resource: "ServiceTimeSlot",
+    action: "read",
+    possession: "own",
+  })
   async serviceTimeSlot(
     @graphql.Args() args: ServiceTimeSlotFindUniqueArgs
   ): Promise<ServiceTimeSlot | null> {
@@ -52,7 +80,13 @@ export class ServiceTimeSlotResolverBase {
     return result;
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @graphql.Mutation(() => ServiceTimeSlot)
+  @nestAccessControl.UseRoles({
+    resource: "ServiceTimeSlot",
+    action: "create",
+    possession: "any",
+  })
   async createServiceTimeSlot(
     @graphql.Args() args: CreateServiceTimeSlotArgs
   ): Promise<ServiceTimeSlot> {
@@ -62,7 +96,13 @@ export class ServiceTimeSlotResolverBase {
     });
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @graphql.Mutation(() => ServiceTimeSlot)
+  @nestAccessControl.UseRoles({
+    resource: "ServiceTimeSlot",
+    action: "update",
+    possession: "any",
+  })
   async updateServiceTimeSlot(
     @graphql.Args() args: UpdateServiceTimeSlotArgs
   ): Promise<ServiceTimeSlot | null> {
@@ -82,6 +122,11 @@ export class ServiceTimeSlotResolverBase {
   }
 
   @graphql.Mutation(() => ServiceTimeSlot)
+  @nestAccessControl.UseRoles({
+    resource: "ServiceTimeSlot",
+    action: "delete",
+    possession: "any",
+  })
   async deleteServiceTimeSlot(
     @graphql.Args() args: DeleteServiceTimeSlotArgs
   ): Promise<ServiceTimeSlot | null> {

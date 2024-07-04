@@ -16,17 +16,35 @@ import * as errors from "../../errors";
 import { Request } from "express";
 import { plainToClass } from "class-transformer";
 import { ApiNestedQuery } from "../../decorators/api-nested-query.decorator";
+import * as nestAccessControl from "nest-access-control";
+import * as defaultAuthGuard from "../../auth/defaultAuth.guard";
 import { AppointmentStatusService } from "../appointmentStatus.service";
+import { AclValidateRequestInterceptor } from "../../interceptors/aclValidateRequest.interceptor";
+import { AclFilterResponseInterceptor } from "../../interceptors/aclFilterResponse.interceptor";
 import { AppointmentStatusCreateInput } from "./AppointmentStatusCreateInput";
 import { AppointmentStatus } from "./AppointmentStatus";
 import { AppointmentStatusFindManyArgs } from "./AppointmentStatusFindManyArgs";
 import { AppointmentStatusWhereUniqueInput } from "./AppointmentStatusWhereUniqueInput";
 import { AppointmentStatusUpdateInput } from "./AppointmentStatusUpdateInput";
 
+@swagger.ApiBearerAuth()
+@common.UseGuards(defaultAuthGuard.DefaultAuthGuard, nestAccessControl.ACGuard)
 export class AppointmentStatusControllerBase {
-  constructor(protected readonly service: AppointmentStatusService) {}
+  constructor(
+    protected readonly service: AppointmentStatusService,
+    protected readonly rolesBuilder: nestAccessControl.RolesBuilder
+  ) {}
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @common.Post()
   @swagger.ApiCreatedResponse({ type: AppointmentStatus })
+  @nestAccessControl.UseRoles({
+    resource: "AppointmentStatus",
+    action: "create",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async createAppointmentStatus(
     @common.Body() data: AppointmentStatusCreateInput
   ): Promise<AppointmentStatus> {
@@ -42,9 +60,18 @@ export class AppointmentStatusControllerBase {
     });
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @common.Get()
   @swagger.ApiOkResponse({ type: [AppointmentStatus] })
   @ApiNestedQuery(AppointmentStatusFindManyArgs)
+  @nestAccessControl.UseRoles({
+    resource: "AppointmentStatus",
+    action: "read",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async appointmentStatuses(
     @common.Req() request: Request
   ): Promise<AppointmentStatus[]> {
@@ -61,9 +88,18 @@ export class AppointmentStatusControllerBase {
     });
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @common.Get("/:id")
   @swagger.ApiOkResponse({ type: AppointmentStatus })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "AppointmentStatus",
+    action: "read",
+    possession: "own",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async appointmentStatus(
     @common.Param() params: AppointmentStatusWhereUniqueInput
   ): Promise<AppointmentStatus | null> {
@@ -85,9 +121,18 @@ export class AppointmentStatusControllerBase {
     return result;
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @common.Patch("/:id")
   @swagger.ApiOkResponse({ type: AppointmentStatus })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "AppointmentStatus",
+    action: "update",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async updateAppointmentStatus(
     @common.Param() params: AppointmentStatusWhereUniqueInput,
     @common.Body() data: AppointmentStatusUpdateInput
@@ -117,6 +162,14 @@ export class AppointmentStatusControllerBase {
   @common.Delete("/:id")
   @swagger.ApiOkResponse({ type: AppointmentStatus })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "AppointmentStatus",
+    action: "delete",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async deleteAppointmentStatus(
     @common.Param() params: AppointmentStatusWhereUniqueInput
   ): Promise<AppointmentStatus | null> {

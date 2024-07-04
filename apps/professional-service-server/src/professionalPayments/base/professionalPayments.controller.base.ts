@@ -16,17 +16,35 @@ import * as errors from "../../errors";
 import { Request } from "express";
 import { plainToClass } from "class-transformer";
 import { ApiNestedQuery } from "../../decorators/api-nested-query.decorator";
+import * as nestAccessControl from "nest-access-control";
+import * as defaultAuthGuard from "../../auth/defaultAuth.guard";
 import { ProfessionalPaymentsService } from "../professionalPayments.service";
+import { AclValidateRequestInterceptor } from "../../interceptors/aclValidateRequest.interceptor";
+import { AclFilterResponseInterceptor } from "../../interceptors/aclFilterResponse.interceptor";
 import { ProfessionalPaymentsCreateInput } from "./ProfessionalPaymentsCreateInput";
 import { ProfessionalPayments } from "./ProfessionalPayments";
 import { ProfessionalPaymentsFindManyArgs } from "./ProfessionalPaymentsFindManyArgs";
 import { ProfessionalPaymentsWhereUniqueInput } from "./ProfessionalPaymentsWhereUniqueInput";
 import { ProfessionalPaymentsUpdateInput } from "./ProfessionalPaymentsUpdateInput";
 
+@swagger.ApiBearerAuth()
+@common.UseGuards(defaultAuthGuard.DefaultAuthGuard, nestAccessControl.ACGuard)
 export class ProfessionalPaymentsControllerBase {
-  constructor(protected readonly service: ProfessionalPaymentsService) {}
+  constructor(
+    protected readonly service: ProfessionalPaymentsService,
+    protected readonly rolesBuilder: nestAccessControl.RolesBuilder
+  ) {}
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @common.Post()
   @swagger.ApiCreatedResponse({ type: ProfessionalPayments })
+  @nestAccessControl.UseRoles({
+    resource: "ProfessionalPayments",
+    action: "create",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async createProfessionalPayments(
     @common.Body() data: ProfessionalPaymentsCreateInput
   ): Promise<ProfessionalPayments> {
@@ -43,9 +61,18 @@ export class ProfessionalPaymentsControllerBase {
     });
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @common.Get()
   @swagger.ApiOkResponse({ type: [ProfessionalPayments] })
   @ApiNestedQuery(ProfessionalPaymentsFindManyArgs)
+  @nestAccessControl.UseRoles({
+    resource: "ProfessionalPayments",
+    action: "read",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async professionalPaymentsItems(
     @common.Req() request: Request
   ): Promise<ProfessionalPayments[]> {
@@ -63,9 +90,18 @@ export class ProfessionalPaymentsControllerBase {
     });
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @common.Get("/:id")
   @swagger.ApiOkResponse({ type: ProfessionalPayments })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "ProfessionalPayments",
+    action: "read",
+    possession: "own",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async professionalPayments(
     @common.Param() params: ProfessionalPaymentsWhereUniqueInput
   ): Promise<ProfessionalPayments | null> {
@@ -88,9 +124,18 @@ export class ProfessionalPaymentsControllerBase {
     return result;
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @common.Patch("/:id")
   @swagger.ApiOkResponse({ type: ProfessionalPayments })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "ProfessionalPayments",
+    action: "update",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async updateProfessionalPayments(
     @common.Param() params: ProfessionalPaymentsWhereUniqueInput,
     @common.Body() data: ProfessionalPaymentsUpdateInput
@@ -121,6 +166,14 @@ export class ProfessionalPaymentsControllerBase {
   @common.Delete("/:id")
   @swagger.ApiOkResponse({ type: ProfessionalPayments })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "ProfessionalPayments",
+    action: "delete",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async deleteProfessionalPayments(
     @common.Param() params: ProfessionalPaymentsWhereUniqueInput
   ): Promise<ProfessionalPayments | null> {

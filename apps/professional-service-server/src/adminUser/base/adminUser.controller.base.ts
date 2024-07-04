@@ -16,17 +16,37 @@ import * as errors from "../../errors";
 import { Request } from "express";
 import { plainToClass } from "class-transformer";
 import { ApiNestedQuery } from "../../decorators/api-nested-query.decorator";
+import * as nestAccessControl from "nest-access-control";
+import * as defaultAuthGuard from "../../auth/defaultAuth.guard";
 import { AdminUserService } from "../adminUser.service";
+import { AclValidateRequestInterceptor } from "../../interceptors/aclValidateRequest.interceptor";
+import { AclFilterResponseInterceptor } from "../../interceptors/aclFilterResponse.interceptor";
 import { AdminUserCreateInput } from "./AdminUserCreateInput";
 import { AdminUser } from "./AdminUser";
 import { AdminUserFindManyArgs } from "./AdminUserFindManyArgs";
 import { AdminUserWhereUniqueInput } from "./AdminUserWhereUniqueInput";
 import { AdminUserUpdateInput } from "./AdminUserUpdateInput";
+import { LoginInput } from "../LoginInput";
+import { LoginResponse } from "../LoginResponse";
 
+@swagger.ApiBearerAuth()
+@common.UseGuards(defaultAuthGuard.DefaultAuthGuard, nestAccessControl.ACGuard)
 export class AdminUserControllerBase {
-  constructor(protected readonly service: AdminUserService) {}
+  constructor(
+    protected readonly service: AdminUserService,
+    protected readonly rolesBuilder: nestAccessControl.RolesBuilder
+  ) {}
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @common.Post()
   @swagger.ApiCreatedResponse({ type: AdminUser })
+  @nestAccessControl.UseRoles({
+    resource: "AdminUser",
+    action: "create",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async createAdminUser(
     @common.Body() data: AdminUserCreateInput
   ): Promise<AdminUser> {
@@ -42,9 +62,18 @@ export class AdminUserControllerBase {
     });
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @common.Get()
   @swagger.ApiOkResponse({ type: [AdminUser] })
   @ApiNestedQuery(AdminUserFindManyArgs)
+  @nestAccessControl.UseRoles({
+    resource: "AdminUser",
+    action: "read",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async adminUsers(@common.Req() request: Request): Promise<AdminUser[]> {
     const args = plainToClass(AdminUserFindManyArgs, request.query);
     return this.service.adminUsers({
@@ -59,9 +88,18 @@ export class AdminUserControllerBase {
     });
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @common.Get("/:id")
   @swagger.ApiOkResponse({ type: AdminUser })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "AdminUser",
+    action: "read",
+    possession: "own",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async adminUser(
     @common.Param() params: AdminUserWhereUniqueInput
   ): Promise<AdminUser | null> {
@@ -83,9 +121,18 @@ export class AdminUserControllerBase {
     return result;
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @common.Patch("/:id")
   @swagger.ApiOkResponse({ type: AdminUser })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "AdminUser",
+    action: "update",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async updateAdminUser(
     @common.Param() params: AdminUserWhereUniqueInput,
     @common.Body() data: AdminUserUpdateInput
@@ -115,6 +162,14 @@ export class AdminUserControllerBase {
   @common.Delete("/:id")
   @swagger.ApiOkResponse({ type: AdminUser })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "AdminUser",
+    action: "delete",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async deleteAdminUser(
     @common.Param() params: AdminUserWhereUniqueInput
   ): Promise<AdminUser | null> {
@@ -137,5 +192,22 @@ export class AdminUserControllerBase {
       }
       throw error;
     }
+  }
+
+  @common.Post("/login")
+  @swagger.ApiOkResponse({
+    type: LoginResponse,
+  })
+  @swagger.ApiNotFoundResponse({
+    type: errors.NotFoundException,
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
+  async LoginAdminUser(
+    @common.Body()
+    body: LoginInput
+  ): Promise<LoginResponse> {
+    return this.service.LoginAdminUser(body);
   }
 }

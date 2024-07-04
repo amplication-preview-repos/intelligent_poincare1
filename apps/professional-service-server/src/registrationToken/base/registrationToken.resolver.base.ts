@@ -13,6 +13,12 @@ import * as graphql from "@nestjs/graphql";
 import { GraphQLError } from "graphql";
 import { isRecordNotFoundError } from "../../prisma.util";
 import { MetaQueryPayload } from "../../util/MetaQueryPayload";
+import * as nestAccessControl from "nest-access-control";
+import * as gqlACGuard from "../../auth/gqlAC.guard";
+import { GqlDefaultAuthGuard } from "../../auth/gqlDefaultAuth.guard";
+import * as common from "@nestjs/common";
+import { AclFilterResponseInterceptor } from "../../interceptors/aclFilterResponse.interceptor";
+import { AclValidateRequestInterceptor } from "../../interceptors/aclValidateRequest.interceptor";
 import { RegistrationToken } from "./RegistrationToken";
 import { RegistrationTokenCountArgs } from "./RegistrationTokenCountArgs";
 import { RegistrationTokenFindManyArgs } from "./RegistrationTokenFindManyArgs";
@@ -21,10 +27,20 @@ import { CreateRegistrationTokenArgs } from "./CreateRegistrationTokenArgs";
 import { UpdateRegistrationTokenArgs } from "./UpdateRegistrationTokenArgs";
 import { DeleteRegistrationTokenArgs } from "./DeleteRegistrationTokenArgs";
 import { RegistrationTokenService } from "../registrationToken.service";
+@common.UseGuards(GqlDefaultAuthGuard, gqlACGuard.GqlACGuard)
 @graphql.Resolver(() => RegistrationToken)
 export class RegistrationTokenResolverBase {
-  constructor(protected readonly service: RegistrationTokenService) {}
+  constructor(
+    protected readonly service: RegistrationTokenService,
+    protected readonly rolesBuilder: nestAccessControl.RolesBuilder
+  ) {}
 
+  @graphql.Query(() => MetaQueryPayload)
+  @nestAccessControl.UseRoles({
+    resource: "RegistrationToken",
+    action: "read",
+    possession: "any",
+  })
   async _registrationTokensMeta(
     @graphql.Args() args: RegistrationTokenCountArgs
   ): Promise<MetaQueryPayload> {
@@ -34,14 +50,26 @@ export class RegistrationTokenResolverBase {
     };
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @graphql.Query(() => [RegistrationToken])
+  @nestAccessControl.UseRoles({
+    resource: "RegistrationToken",
+    action: "read",
+    possession: "any",
+  })
   async registrationTokens(
     @graphql.Args() args: RegistrationTokenFindManyArgs
   ): Promise<RegistrationToken[]> {
     return this.service.registrationTokens(args);
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @graphql.Query(() => RegistrationToken, { nullable: true })
+  @nestAccessControl.UseRoles({
+    resource: "RegistrationToken",
+    action: "read",
+    possession: "own",
+  })
   async registrationToken(
     @graphql.Args() args: RegistrationTokenFindUniqueArgs
   ): Promise<RegistrationToken | null> {
@@ -52,7 +80,13 @@ export class RegistrationTokenResolverBase {
     return result;
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @graphql.Mutation(() => RegistrationToken)
+  @nestAccessControl.UseRoles({
+    resource: "RegistrationToken",
+    action: "create",
+    possession: "any",
+  })
   async createRegistrationToken(
     @graphql.Args() args: CreateRegistrationTokenArgs
   ): Promise<RegistrationToken> {
@@ -62,7 +96,13 @@ export class RegistrationTokenResolverBase {
     });
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @graphql.Mutation(() => RegistrationToken)
+  @nestAccessControl.UseRoles({
+    resource: "RegistrationToken",
+    action: "update",
+    possession: "any",
+  })
   async updateRegistrationToken(
     @graphql.Args() args: UpdateRegistrationTokenArgs
   ): Promise<RegistrationToken | null> {
@@ -82,6 +122,11 @@ export class RegistrationTokenResolverBase {
   }
 
   @graphql.Mutation(() => RegistrationToken)
+  @nestAccessControl.UseRoles({
+    resource: "RegistrationToken",
+    action: "delete",
+    possession: "any",
+  })
   async deleteRegistrationToken(
     @graphql.Args() args: DeleteRegistrationTokenArgs
   ): Promise<RegistrationToken | null> {

@@ -16,17 +16,35 @@ import * as errors from "../../errors";
 import { Request } from "express";
 import { plainToClass } from "class-transformer";
 import { ApiNestedQuery } from "../../decorators/api-nested-query.decorator";
+import * as nestAccessControl from "nest-access-control";
+import * as defaultAuthGuard from "../../auth/defaultAuth.guard";
 import { ProfessionalAvailabilityService } from "../professionalAvailability.service";
+import { AclValidateRequestInterceptor } from "../../interceptors/aclValidateRequest.interceptor";
+import { AclFilterResponseInterceptor } from "../../interceptors/aclFilterResponse.interceptor";
 import { ProfessionalAvailabilityCreateInput } from "./ProfessionalAvailabilityCreateInput";
 import { ProfessionalAvailability } from "./ProfessionalAvailability";
 import { ProfessionalAvailabilityFindManyArgs } from "./ProfessionalAvailabilityFindManyArgs";
 import { ProfessionalAvailabilityWhereUniqueInput } from "./ProfessionalAvailabilityWhereUniqueInput";
 import { ProfessionalAvailabilityUpdateInput } from "./ProfessionalAvailabilityUpdateInput";
 
+@swagger.ApiBearerAuth()
+@common.UseGuards(defaultAuthGuard.DefaultAuthGuard, nestAccessControl.ACGuard)
 export class ProfessionalAvailabilityControllerBase {
-  constructor(protected readonly service: ProfessionalAvailabilityService) {}
+  constructor(
+    protected readonly service: ProfessionalAvailabilityService,
+    protected readonly rolesBuilder: nestAccessControl.RolesBuilder
+  ) {}
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @common.Post()
   @swagger.ApiCreatedResponse({ type: ProfessionalAvailability })
+  @nestAccessControl.UseRoles({
+    resource: "ProfessionalAvailability",
+    action: "create",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async createProfessionalAvailability(
     @common.Body() data: ProfessionalAvailabilityCreateInput
   ): Promise<ProfessionalAvailability> {
@@ -43,9 +61,18 @@ export class ProfessionalAvailabilityControllerBase {
     });
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @common.Get()
   @swagger.ApiOkResponse({ type: [ProfessionalAvailability] })
   @ApiNestedQuery(ProfessionalAvailabilityFindManyArgs)
+  @nestAccessControl.UseRoles({
+    resource: "ProfessionalAvailability",
+    action: "read",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async professionalAvailabilities(
     @common.Req() request: Request
   ): Promise<ProfessionalAvailability[]> {
@@ -66,9 +93,18 @@ export class ProfessionalAvailabilityControllerBase {
     });
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @common.Get("/:id")
   @swagger.ApiOkResponse({ type: ProfessionalAvailability })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "ProfessionalAvailability",
+    action: "read",
+    possession: "own",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async professionalAvailability(
     @common.Param() params: ProfessionalAvailabilityWhereUniqueInput
   ): Promise<ProfessionalAvailability | null> {
@@ -91,9 +127,18 @@ export class ProfessionalAvailabilityControllerBase {
     return result;
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @common.Patch("/:id")
   @swagger.ApiOkResponse({ type: ProfessionalAvailability })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "ProfessionalAvailability",
+    action: "update",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async updateProfessionalAvailability(
     @common.Param() params: ProfessionalAvailabilityWhereUniqueInput,
     @common.Body() data: ProfessionalAvailabilityUpdateInput
@@ -124,6 +169,14 @@ export class ProfessionalAvailabilityControllerBase {
   @common.Delete("/:id")
   @swagger.ApiOkResponse({ type: ProfessionalAvailability })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "ProfessionalAvailability",
+    action: "delete",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async deleteProfessionalAvailability(
     @common.Param() params: ProfessionalAvailabilityWhereUniqueInput
   ): Promise<ProfessionalAvailability | null> {

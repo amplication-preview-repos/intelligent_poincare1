@@ -13,6 +13,12 @@ import * as graphql from "@nestjs/graphql";
 import { GraphQLError } from "graphql";
 import { isRecordNotFoundError } from "../../prisma.util";
 import { MetaQueryPayload } from "../../util/MetaQueryPayload";
+import * as nestAccessControl from "nest-access-control";
+import * as gqlACGuard from "../../auth/gqlAC.guard";
+import { GqlDefaultAuthGuard } from "../../auth/gqlDefaultAuth.guard";
+import * as common from "@nestjs/common";
+import { AclFilterResponseInterceptor } from "../../interceptors/aclFilterResponse.interceptor";
+import { AclValidateRequestInterceptor } from "../../interceptors/aclValidateRequest.interceptor";
 import { DayOfWeek } from "./DayOfWeek";
 import { DayOfWeekCountArgs } from "./DayOfWeekCountArgs";
 import { DayOfWeekFindManyArgs } from "./DayOfWeekFindManyArgs";
@@ -21,10 +27,20 @@ import { CreateDayOfWeekArgs } from "./CreateDayOfWeekArgs";
 import { UpdateDayOfWeekArgs } from "./UpdateDayOfWeekArgs";
 import { DeleteDayOfWeekArgs } from "./DeleteDayOfWeekArgs";
 import { DayOfWeekService } from "../dayOfWeek.service";
+@common.UseGuards(GqlDefaultAuthGuard, gqlACGuard.GqlACGuard)
 @graphql.Resolver(() => DayOfWeek)
 export class DayOfWeekResolverBase {
-  constructor(protected readonly service: DayOfWeekService) {}
+  constructor(
+    protected readonly service: DayOfWeekService,
+    protected readonly rolesBuilder: nestAccessControl.RolesBuilder
+  ) {}
 
+  @graphql.Query(() => MetaQueryPayload)
+  @nestAccessControl.UseRoles({
+    resource: "DayOfWeek",
+    action: "read",
+    possession: "any",
+  })
   async _dayOfWeeksMeta(
     @graphql.Args() args: DayOfWeekCountArgs
   ): Promise<MetaQueryPayload> {
@@ -34,14 +50,26 @@ export class DayOfWeekResolverBase {
     };
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @graphql.Query(() => [DayOfWeek])
+  @nestAccessControl.UseRoles({
+    resource: "DayOfWeek",
+    action: "read",
+    possession: "any",
+  })
   async dayOfWeeks(
     @graphql.Args() args: DayOfWeekFindManyArgs
   ): Promise<DayOfWeek[]> {
     return this.service.dayOfWeeks(args);
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @graphql.Query(() => DayOfWeek, { nullable: true })
+  @nestAccessControl.UseRoles({
+    resource: "DayOfWeek",
+    action: "read",
+    possession: "own",
+  })
   async dayOfWeek(
     @graphql.Args() args: DayOfWeekFindUniqueArgs
   ): Promise<DayOfWeek | null> {
@@ -52,7 +80,13 @@ export class DayOfWeekResolverBase {
     return result;
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @graphql.Mutation(() => DayOfWeek)
+  @nestAccessControl.UseRoles({
+    resource: "DayOfWeek",
+    action: "create",
+    possession: "any",
+  })
   async createDayOfWeek(
     @graphql.Args() args: CreateDayOfWeekArgs
   ): Promise<DayOfWeek> {
@@ -62,7 +96,13 @@ export class DayOfWeekResolverBase {
     });
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @graphql.Mutation(() => DayOfWeek)
+  @nestAccessControl.UseRoles({
+    resource: "DayOfWeek",
+    action: "update",
+    possession: "any",
+  })
   async updateDayOfWeek(
     @graphql.Args() args: UpdateDayOfWeekArgs
   ): Promise<DayOfWeek | null> {
@@ -82,6 +122,11 @@ export class DayOfWeekResolverBase {
   }
 
   @graphql.Mutation(() => DayOfWeek)
+  @nestAccessControl.UseRoles({
+    resource: "DayOfWeek",
+    action: "delete",
+    possession: "any",
+  })
   async deleteDayOfWeek(
     @graphql.Args() args: DeleteDayOfWeekArgs
   ): Promise<DayOfWeek | null> {

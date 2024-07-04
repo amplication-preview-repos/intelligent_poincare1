@@ -13,6 +13,12 @@ import * as graphql from "@nestjs/graphql";
 import { GraphQLError } from "graphql";
 import { isRecordNotFoundError } from "../../prisma.util";
 import { MetaQueryPayload } from "../../util/MetaQueryPayload";
+import * as nestAccessControl from "nest-access-control";
+import * as gqlACGuard from "../../auth/gqlAC.guard";
+import { GqlDefaultAuthGuard } from "../../auth/gqlDefaultAuth.guard";
+import * as common from "@nestjs/common";
+import { AclFilterResponseInterceptor } from "../../interceptors/aclFilterResponse.interceptor";
+import { AclValidateRequestInterceptor } from "../../interceptors/aclValidateRequest.interceptor";
 import { ProfessionalAvailability } from "./ProfessionalAvailability";
 import { ProfessionalAvailabilityCountArgs } from "./ProfessionalAvailabilityCountArgs";
 import { ProfessionalAvailabilityFindManyArgs } from "./ProfessionalAvailabilityFindManyArgs";
@@ -21,10 +27,20 @@ import { CreateProfessionalAvailabilityArgs } from "./CreateProfessionalAvailabi
 import { UpdateProfessionalAvailabilityArgs } from "./UpdateProfessionalAvailabilityArgs";
 import { DeleteProfessionalAvailabilityArgs } from "./DeleteProfessionalAvailabilityArgs";
 import { ProfessionalAvailabilityService } from "../professionalAvailability.service";
+@common.UseGuards(GqlDefaultAuthGuard, gqlACGuard.GqlACGuard)
 @graphql.Resolver(() => ProfessionalAvailability)
 export class ProfessionalAvailabilityResolverBase {
-  constructor(protected readonly service: ProfessionalAvailabilityService) {}
+  constructor(
+    protected readonly service: ProfessionalAvailabilityService,
+    protected readonly rolesBuilder: nestAccessControl.RolesBuilder
+  ) {}
 
+  @graphql.Query(() => MetaQueryPayload)
+  @nestAccessControl.UseRoles({
+    resource: "ProfessionalAvailability",
+    action: "read",
+    possession: "any",
+  })
   async _professionalAvailabilitiesMeta(
     @graphql.Args() args: ProfessionalAvailabilityCountArgs
   ): Promise<MetaQueryPayload> {
@@ -34,14 +50,26 @@ export class ProfessionalAvailabilityResolverBase {
     };
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @graphql.Query(() => [ProfessionalAvailability])
+  @nestAccessControl.UseRoles({
+    resource: "ProfessionalAvailability",
+    action: "read",
+    possession: "any",
+  })
   async professionalAvailabilities(
     @graphql.Args() args: ProfessionalAvailabilityFindManyArgs
   ): Promise<ProfessionalAvailability[]> {
     return this.service.professionalAvailabilities(args);
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @graphql.Query(() => ProfessionalAvailability, { nullable: true })
+  @nestAccessControl.UseRoles({
+    resource: "ProfessionalAvailability",
+    action: "read",
+    possession: "own",
+  })
   async professionalAvailability(
     @graphql.Args() args: ProfessionalAvailabilityFindUniqueArgs
   ): Promise<ProfessionalAvailability | null> {
@@ -52,7 +80,13 @@ export class ProfessionalAvailabilityResolverBase {
     return result;
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @graphql.Mutation(() => ProfessionalAvailability)
+  @nestAccessControl.UseRoles({
+    resource: "ProfessionalAvailability",
+    action: "create",
+    possession: "any",
+  })
   async createProfessionalAvailability(
     @graphql.Args() args: CreateProfessionalAvailabilityArgs
   ): Promise<ProfessionalAvailability> {
@@ -62,7 +96,13 @@ export class ProfessionalAvailabilityResolverBase {
     });
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @graphql.Mutation(() => ProfessionalAvailability)
+  @nestAccessControl.UseRoles({
+    resource: "ProfessionalAvailability",
+    action: "update",
+    possession: "any",
+  })
   async updateProfessionalAvailability(
     @graphql.Args() args: UpdateProfessionalAvailabilityArgs
   ): Promise<ProfessionalAvailability | null> {
@@ -82,6 +122,11 @@ export class ProfessionalAvailabilityResolverBase {
   }
 
   @graphql.Mutation(() => ProfessionalAvailability)
+  @nestAccessControl.UseRoles({
+    resource: "ProfessionalAvailability",
+    action: "delete",
+    possession: "any",
+  })
   async deleteProfessionalAvailability(
     @graphql.Args() args: DeleteProfessionalAvailabilityArgs
   ): Promise<ProfessionalAvailability | null> {
